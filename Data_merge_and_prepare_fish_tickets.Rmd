@@ -1,0 +1,116 @@
+---
+title: "Prepare fish ticket data for Spatial Indicators Workshop"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+This file describes how the fish ticket data from Alaska were obtained, processed, and merged. Data were obtained from the AKFIN database, the "Council" schema and the "comprehensive_ft" table. The general action of this code is to pull fish ticket data from AKFIN and save each year as an individual file. The annual files are then subset to reduce the number of columns before binding years together and saving as a merged dataset. Once merged, a single join operation is performed that adds the spatial coordinate (lat/lon) for each ADFG statistical (stat6) area. 
+
+```{r}
+library(tidyverse)
+library(DBI)
+```
+
+Read in a given year of fish ticket data. Note that for now, this chunk is set to eval=FALSE so that it is not run again.  
+
+```{r eval=FALSE}
+#To pull in a new year of data change new year to the desired year
+newyear <- 2019
+con <- dbConnect(odbc::odbc(), "akfin", UID="jwatson", PWD= rstudioapi::askForPassword("Enter AKFIN Password"))
+my_tbl <- dbSendQuery(con,paste0("SELECT * FROM council.comprehensive_ft where CFEC_PMT_YEAR=",newyear,";"))
+data <- dbFetch(my_tbl)
+saveRDS(data,file=paste0("Data/comp_ft_",newyear,".rds"))
+dbDisconnect(con)
+```
+
+To make a combined file that includes all of the years and selects the below fields run the following chunk. I have renamed several of the fields to be consistent with the renaming we'd done for the same fields in the nceas studies. The output file from 1991:2018 is about 600mb. Note that this chunk is set to eval=F because it has already been run and we don't want to run it again unless we have to. It takes a long time. 
+```{r eval=FALSE}
+lapply(1991:2018,function(x) readRDS(paste0("Data/comp_ft_",x,".rds")) %>% 
+         dplyr::select(
+           year=ADFG_B_BATCH_YEAR,
+           port=ADFG_H_PORT_CODE,
+           p_holder=CFEC_FILE_NUMBER, #- unique permit holder ID
+           p_serial=CFEC_PMT_SERIAL,  #- unique permit ID
+           g_earn=CFEC_VALUE,
+           g_pounds=ADFG_I_POUNDS,
+           f_ticket=ADFG_H_SEQ_TICKET_NUMBER, #- unique fish tiket ID
+           cadfg=CFEC_CORRECTED_ADFG,
+           harvest=ADFG_I_HARVEST_CODE,
+           procid=ADFG_H_PROCESSOR_CODE,
+           g_spcs=CFEC_SPECIES_CODE,
+           stat6=CFEC_STAT_AREA,
+           specn=ADFG_I_SPECIES_CODE,
+           p_fshy=CFEC_PMT_FSHY,
+           p_check=CFEC_PMT_CHECK,
+           A80_PROCESSOR_FLAG,A80_VESSEL_FLAG,ADFG_B_TICKET_START,	ADFG_H_CDQ_CODE,	
+           ADFG_H_DATE_FISHING_BEGAN,ADFG_H_DATE_FISHING_ENDED,ADFG_H_DATE_LANDED,ADFG_H_DAYS_FISHED,
+           ADFG_H_GEAR_CODE,ADFG_H_MGT_PROGRAM_ID,ADFG_H_MGT_PROGRAM_NUMBER,ADFG_H_MULTI_IFQ_PERMITS,
+           ADFG_H_PARTIAL_DELIVERY,ADFG_H_PERMIT_FISHERY,ADFG_H_STAT_WEEK,ADFG_I_DELIVERY_CODE,
+           ADFG_I_NUMBER_OF_FISH,ADFG_I_PRICE,AFA_MOTHERSHIP_FLAG,AFA_VESSEL_FLAG,AFA_VESSEL_PERMIT_TYPE,	
+           BLEND_TARGET_GRP,CFEC_LANDING_STATUS,FISHERY_DESCRIPTION,FMP_AREA,FMP_GEAR,FMP_GROUNDFISH_FLAG,
+           FMP_SUBAREA,HARVEST_DESCRIPTION,INSIDE_WATERS,IPHC_I_REG_AREA,IPHC_I_STAT_AREA,
+           MANAGEMENT_AREA_CODE,MANAGEMENT_AREA_DISTRICT_CODE,CFEC_PMT_TYPE,PORT_NAME,
+           REPORTING_AREA_CODE,SA_CRAB_FISHERY,SPECIES_NAME,VES_AKR_LENGTH) %>% 
+         bind_rows() %>% 
+         saveRDS(.,file="AKFIN_comp_ft_trimmed_1991_2018.rds")
+```
+
+Read in the dataset we actually want to use and merge this dataset with the centroid coordinates for each adfg stat area. Note that for salmon and other non-groundfish management areas, these coordinates will be NA and we'll have no spatial information. Save this dataset to override the existing one. Note that I have eval=FALSE for this chunk. It takes a long time to run and should not need to be run unless the data are changed.
+
+```{r,eval=FALSE}
+saveRDS(readRDS("Data/AKFIN_comp_ft_trimmed_1991_2018.rds") %>% #  Read in fish ticket data
+  left_join(readRDS("Data/Stat_Centroid.rds") %>%  #  Read in centroid data
+              dplyr::select(lon=x,lat=y,stat6=STAT_AREA) %>%  #  Rename fields
+              mutate(lon=round(lon,2), # Round lat and lon as they currently have four decimal places
+                     lat=round(lat,2))),
+  file="Data/AKFIN_comp_ft_trimmed_1991_2018.rds") # This filename will override the existing one.
+```
+
+To update a single year of data the following code should be sufficient. Note that the chunk is set to eval=FALSE. Probably easiest to just copy and paste this chunk in a separate document to run it. 
+
+```{r eval=FALSE}
+#  Change newyear to the desired year
+newyear <- 2019
+con <- dbConnect(odbc::odbc(), "akfin", UID="jwatson", PWD= rstudioapi::askForPassword("Enter AKFIN Password"))
+my_tbl <- dbSendQuery(con,paste0("SELECT * FROM council.comprehensive_ft where CFEC_PMT_YEAR=",newyear,";"))
+data <- dbFetch(my_tbl)
+saveRDS(data,file=paste0("Data/comp_ft_",newyear,".rds"))
+dbDisconnect(con)
+
+data <- readRDS(paste0("Data/comp_ft_",newyear,".rds")) %>% 
+  dplyr::select(
+    year=ADFG_B_BATCH_YEAR,
+    port=ADFG_H_PORT_CODE,
+    p_holder=CFEC_FILE_NUMBER, #- unique permit holder ID
+    p_serial=CFEC_PMT_SERIAL,  #- unique permit ID
+    g_earn=CFEC_VALUE,
+    g_pounds=ADFG_I_POUNDS,
+    f_ticket=ADFG_H_SEQ_TICKET_NUMBER, #- unique fish tiket ID
+    cadfg=CFEC_CORRECTED_ADFG,
+    harvest=ADFG_I_HARVEST_CODE,
+    procid=ADFG_H_PROCESSOR_CODE,
+    g_spcs=CFEC_SPECIES_CODE,
+    stat6=CFEC_STAT_AREA,
+    specn=ADFG_I_SPECIES_CODE,
+    p_fshy=CFEC_PMT_FSHY,
+    p_check=CFEC_PMT_CHECK,
+    A80_PROCESSOR_FLAG,A80_VESSEL_FLAG,ADFG_B_TICKET_START,	ADFG_H_CDQ_CODE,	
+    ADFG_H_DATE_FISHING_BEGAN,ADFG_H_DATE_FISHING_ENDED,ADFG_H_DATE_LANDED,ADFG_H_DAYS_FISHED,
+    ADFG_H_GEAR_CODE,ADFG_H_MGT_PROGRAM_ID,ADFG_H_MGT_PROGRAM_NUMBER,ADFG_H_MULTI_IFQ_PERMITS,
+    ADFG_H_PARTIAL_DELIVERY,ADFG_H_PERMIT_FISHERY,ADFG_H_STAT_WEEK,ADFG_I_DELIVERY_CODE,
+    ADFG_I_NUMBER_OF_FISH,ADFG_I_PRICE,AFA_MOTHERSHIP_FLAG,AFA_VESSEL_FLAG,AFA_VESSEL_PERMIT_TYPE,	
+    BLEND_TARGET_GRP,CFEC_LANDING_STATUS,FISHERY_DESCRIPTION,FMP_AREA,FMP_GEAR,FMP_GROUNDFISH_FLAG,
+    FMP_SUBAREA,HARVEST_DESCRIPTION,INSIDE_WATERS,IPHC_I_REG_AREA,IPHC_I_STAT_AREA,
+    MANAGEMENT_AREA_CODE,MANAGEMENT_AREA_DISTRICT_CODE,CFEC_PMT_TYPE,PORT_NAME,
+    REPORTING_AREA_CODE,SA_CRAB_FISHERY,SPECIES_NAME,VES_AKR_LENGTH) %>% 
+  left_join(readRDS("Data/Stat_Centroid.rds") %>%  #  Read in centroid data
+              dplyr::select(lon=x,lat=y,stat6=STAT_AREA) %>%  #  Rename fields
+              mutate(lon=round(lon,2), # Round lat and lon as they currently have four decimal places
+                     lat=round(lat,2)))
+
+#  The following line will read in the full dataset, bind rows with the new one, and resave with a filename that reflects newyear.
+saveRDS(readRDS("Data/AKFIN_comp_ft_trimmed_1991_2018.rds") %>% #  Read in fish ticket data
+  bind_rows(data),
+  file=paste0("Data/AKFIN_comp_ft_trimmed_1991_",newyear,".rds"))
+```
