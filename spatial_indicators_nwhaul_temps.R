@@ -1,10 +1,7 @@
 #-------------------------------------------------------------------------------------------------------------------------
-# This script pulls JPL / ERDDAP satellite data of SST for the southeast Bering, north Bering, and Chukchi Seas for each September from 
-# 2002 to the latest year..
-# It aggregates the native netCDF data, which are at 0.01x0.01 degrees to the nearest 0.1 and nearest degree.
+# This script pulls JPL / ERDDAP satellite data of SST for the coordinates of the west coast trawl survey. It adds a spatial buffer around each point and averages the sst data for that area and date.
 # Author: Jordan Watson (jordan.watson@noaa.gov)
-# Date created: 11/19/2018
-# Date modified: 07/15/2019
+# Date created: 07/19/2019
 #-------------------------------------------------------------------------------------------------------------------------
 
 # Load packages
