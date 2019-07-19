@@ -48,7 +48,7 @@ data <- inner_join(data, species_codes)
 # select and rename columns, dropping rows with mising depths
 data <- data %>% select(YEAR, SURVEY, BOTTOM_DEPTH = GEAR_DEPTH, SURFACE_TEMPERATURE, GEAR_TEMPERATURE, 
                         CPUE = WGTCPUE, LATITUDE, LONGITUDE, DATE, DAY, MONTH, SPECIES_NAME, COMMON_NAME) %>%
-                 tidyr::drop_na(BOTTOM_DEPTH) 
+                 tidyr::drop_na(BOTTOM_DEPTH, LATITUDE, LONGITUDE)
 
 write.csv(data, "C:/Users/lewis.barnett/Work/AFSC/Data/AK_BTS/data/AK_BTS.csv")
 saveRDS(data, "C:/Users/lewis.barnett/Work/AFSC/Data/AK_BTS/data/AK_BTS.rds")
