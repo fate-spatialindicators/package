@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<metadata>
+	<idinfo>
+		<citation>
+			<citeinfo>
+				<origin>National Oceanic and Atmospheric Administration, National Marine Fisheries Service, Northwest Regional Office</origin>
+				<pubdate>20060511</pubdate>
+				<title>EFH Conservation Areas off Washington, Oregon, and California for NMFS' Final Rule Implementing Amendment 19 to the Pacific Coast Groundfish Fishery Management Plan</title>
+				<geoform>vector digital data</geoform>
+			</citeinfo>
+		</citation>
+		<descript>
+			<abstract>These data depict Essential Fish Habitat (EFH) conservation areas off Washington, Oregon, and California.  The coordinate locations are from NMFS' Final Rule to implement Amendment 19 to the Pacific Coast Groundfish Fishery Management Plan (71 FR 27408; May 11, 2006).  In order to minimize to the extent practicable adverse effects from fishing, the final rule prohibits fishing with various gear types within these areas.  Consult the text of the final rule for specific details about each area and the management measures. The prohibitions are listed in Section 660.306 and the official coordinates are listed in Sections 660.397, 660.398, and 660.399 of the final rule.</abstract>
+			<purpose>These data were developed to support implementation of NMFS' Final Rule implementing amendment 19 to the Pacific Coast Groundfish Fishery Management Plan (FMP).</purpose>
+			<supplinf>These boundaries were created by an automated process to extract the coordinates from the text of the Final Rule.  Any discrepancies between these coordinates and the Federal Register will be resolved in favor of the Federal Register.</supplinf>
+		</descript>
+		<timeperd>
+			<timeinfo>
+				<sngdate>
+					<caldate>20060511</caldate>
+				</sngdate>
+			</timeinfo>
+			<current>publication date</current>
+		</timeperd>
+		<status>
+			<progress>Complete</progress>
+			<update>None planned</update>
+		</status>
+		<spdom>
+			<bounding>
+				<westbc>-128.767000</westbc>
+				<eastbc>-117.833333</eastbc>
+				<northbc>48.398167</northbc>
+				<southbc>32.500000</southbc>
+			</bounding>
+		</spdom>
+		<keywords>
+			<theme>
+				<themekey>groundfish</themekey>
+				<themekey>essential fish habitat (EFH)</themekey>
+				<themekey>final rule</themekey>
+				<themekey>minimize fishing impacts</themekey>
+				<themekey>fishery management plan (FMP)</themekey>
+			</theme>
+			<place>
+				<placekey>Washington</placekey>
+				<placekey>Oregon</placekey>
+				<placekey>California</placekey>
+				<placekey>west coast</placekey>
+				<placekey>Pacific coast</placekey>
+				<placekey>Northwest Pacific Ocean</placekey>
+			</place>
+		</keywords>
+		<accconst>none</accconst>
+		<useconst>none</useconst>
+		<ptcontac>
+			<cntinfo>
+				<cntorgp>
+					<cntorg>NOAA, National Marine Fisheries Service, Northwest Region</cntorg>
+					<cntper>Steve Copps</cntper>
+				</cntorgp>
+				<cntaddr>
+					<addrtype>mailing and physical address</addrtype>
+					<address>7600 Sand Point Way, NE</address>
+					<city>Seattle</city>
+					<state>WA</state>
+					<postal>98115-0070</postal>
+					<country>U.S.A.</country>
+				</cntaddr>
+				<cntvoice>(206) 526-6140</cntvoice>
+				<cntfax>(206) 526-6736</cntfax>
+				<cntemail>steve.copps@noaa.gov</cntemail>
+			</cntinfo>
+		</ptcontac>
+		<native>Microsoft Windows XP Version 5.1 (Build 2600) Service Pack 2; ESRI ArcCatalog 9.1.0.722</native>
+	</idinfo>
+	<dataqual>
+		<attracc>
+			<attraccr>Attributes were generated via an automated process from the text of the Federal Register document.  Attributes were visually assessed for accuracy.</attraccr>
+		</attracc>
+		<logic>The areas were derived from the Federal Register document, and the caveats associated with the source data would apply to this line.</logic>
+		<complete>The areas are complete within the west coast Exclusive Economic Zone (EEZ).</complete>
+		<posacc>
+			<horizpa>
+				<horizpar>Horizontal accuracy is assumed to be absolute because coordinate locations were extracted in an automated process from the text of the Federal Register.</horizpar>
+			</horizpa>
+		</posacc>
+		<lineage>
+			<srcinfo>
+				<srccite>
+					<citeinfo>
+						<origin>National Oceanic and Atmospheric Administration, National Marine Fisheries Service</origin>
+						<pubdate>20060511</pubdate>
+						<title>Magnuson-Stevens Act Provisions; Fisheries Off West Coast States; Pacific Coast Groundfish Fishery</title>
+						<geoform>PDF document with coordinate lists</geoform>
+						<othercit>Federal Register, Vol. 71, No. 91, page 27408.  50 CFR Part 660, [Docket No. 051213334-6119-02; I.D. 112905C], RIN 0648-AT98</othercit>
+						<onlink>http://www.nwr.noaa.gov/Publications/FR-Notices/2006/upload/71FR27408.pdf</onlink>
+					</citeinfo>
+				</srccite>
+				<typesrc>online</typesrc>
+				<srctime>
+					<timeinfo>
+						<sngdate>
+							<caldate>20060511</caldate>
+						</sngdate>
+					</timeinfo>
+					<srccurr>data of publication</srccurr>
+				</srctime>
+				<srccitea>EFH Final Rule</srccitea>
+				<srccontr>Provides coordinate list</srccontr>
+			</srcinfo>
+			<srcinfo>
+				<srccite>
+					<citeinfo>
+						<origin>Department of Commerce (DOC), National Oceanic and Atmospheric Administration (NOAA), Office of Coast Survey (OCS), Coast Survey Development Laboratory (CSDL)</origin>
+						<pubdate>20011001</pubdate>
+						<title>U.S. Merged Vector Shoreline Derived from NOAA Nautical Charts</title>
+						<geoform>vector digital data</geoform>
+						<onlink>http://nauticalcharts.noaa.gov/csdl/ctp/cm_vs.htm</onlink>
+					</citeinfo>
+				</srccite>
+				<typesrc>online</typesrc>
+				<srctime>
+					<timeinfo>
+						<rngdates>
+							<begdate>200110</begdate>
+							<enddate>present</enddate>
+						</rngdates>
+					</timeinfo>
+					<srccurr>publication date</srccurr>
+				</srctime>
+				<srccitea>Merged Vector Shoreline</srccitea>
+				<srccontr>Provides mean high water shoreline delineation</srccontr>
+			</srcinfo>
+			<procstep>
+				<procdesc>
+(1) Extracted point coordinates and area name from Federal Register text using Perl script.
+(2) Created ArcInfo format line coverage.
+(3) For areas that had the high water line as a boundary, or that overlapped with land, combined with lines from NOAA' merged vector shoreline to create closed polygons.
+</procdesc>
+				<srcused>EFH Final Rule</srcused>
+				<srcused>Merged Vector Shoreline</srcused>
+				<procdate>200605</procdate>
+			</procstep>
+			<procstep><procdesc Sync="TRUE">Metadata imported.</procdesc><srcused Sync="TRUE">C:\DOCUME~1\Allison\LOCALS~1\Temp\xml1C3.tmp</srcused><date Sync="TRUE">20060524</date><time Sync="TRUE">12305600</time></procstep></lineage>
+	</dataqual>
+	<spdoinfo>
+		<direct>Vector</direct>
+		<ptvctinf>
+			<sdtsterm>
+				<sdtstype>G-polygon</sdtstype>
+				<ptvctcnt>56</ptvctcnt>
+			</sdtsterm>
+		</ptvctinf>
+	</spdoinfo>
+	<spref>
+		<horizsys>
+			<geograph>
+				<latres>0.000000</latres>
+				<longres>0.000000</longres>
+				<geogunit>Decimal degrees</geogunit>
+			</geograph>
+			<geodetic>
+				<horizdn>North American Datum of 1983</horizdn>
+				<ellips>Geodetic Reference System 80</ellips>
+				<semiaxis>6378137.000000</semiaxis>
+				<denflat>298.257222</denflat>
+			</geodetic>
+		</horizsys>
+	</spref>
+	<eainfo>
+		<detailed>
+			<enttyp>
+				<enttypl>efh_consarea_points.dbf</enttypl>
+				<enttypd>attribute table</enttypd>
+			</enttyp>
+			<attr>
+				<attrlabl>FID</attrlabl>
+				<attrdef>Internal feature number.</attrdef>
+				<attrdefs>ESRI</attrdefs>
+				<attrdomv>
+					<udom>Sequential unique whole numbers that are automatically generated.</udom>
+				</attrdomv>
+			</attr>
+			<attr>
+				<attrlabl>Shape</attrlabl>
+				<attrdef>Feature geometry.</attrdef>
+				<attrdefs>ESRI</attrdefs>
+				<attrdomv>
+					<udom>Coordinates defining the features.</udom>
+				</attrdomv>
+			</attr>
+			<attr>
+				<attrlabl>AREA_NAME</attrlabl>
+				<attrdef>Name of the area</attrdef>
+				<attrdefs>Final Rule</attrdefs>
+				<attrdomv>
+					<udom>Geographic names for the area depicted</udom>
+				</attrdomv>
+			</attr>
+			<attr>
+				<attrlabl>PROHIBIT</attrlabl>
+				<attrdef>Fishing prohibitions within each area</attrdef>
+				<attrdefs>Final Rule</attrdefs>
+				<attrdomv>
+					<udom>Type of fishing gear that is prohibited within the area</udom>
+				</attrdomv>
+			</attr>
+			<attr>
+				<attrlabl>STATE</attrlabl>
+				<attrdef>State</attrdef>
+				<attrdefs>Final Rule</attrdefs>
+				<attrdomv>
+					<edom>
+						<edomv>WA</edomv>
+						<edomvd>Washington</edomvd>
+						<edomvds></edomvds>
+					</edom>
+				</attrdomv>
+				<attrdomv>
+					<edom>
+						<edomv>OR</edomv>
+						<edomvd>Oregon</edomvd>
+						<edomvds></edomvds>
+					</edom>
+				</attrdomv>
+				<attrdomv>
+					<edom>
+						<edomv>CA</edomv>
+						<edomvd>California</edomvd>
+						<edomvds></edomvds>
+					</edom>
+				</attrdomv>
+			</attr>
+		</detailed>
+	</eainfo>
+	<distinfo>
+		<distrib>
+			<cntinfo>
+				<cntorgp>
+					<cntorg>NOAA, National Marine Fisheries Service, Northwest Region</cntorg>
+					<cntper>Steve Copps</cntper>
+				</cntorgp>
+				<cntaddr>
+					<addrtype>mailing and physical address</addrtype>
+					<address>7600 Sand Point Way, NE</address>
+					<city>Seattle</city>
+					<state>WA</state>
+					<postal>98115-0070</postal>
+					<country>U.S.A.</country>
+				</cntaddr>
+				<cntvoice>(206) 526-6140</cntvoice>
+				<cntfax>(206) 526-6736</cntfax>
+				<cntemail>steve.copps@noaa.gov</cntemail>
+			</cntinfo>
+		</distrib>
+		<resdesc>Downloadable Data</resdesc>
+		<distliab>These data do not constitute legal boundaries.  Any discrepancies between these coordinates and the Federal Register will be resolved in favor of the Federal Register.</distliab>
+		<stdorder>
+			<digform>
+				<digtinfo>
+					<formname>ESRI Shape File</formname>
+					<filedec>no compression applied</filedec>
+					<transize>0.105</transize>
+				</digtinfo>
+			</digform>
+		</stdorder>
+	</distinfo>
+	<metainfo>
+		<metd>200605</metd>
+		<metc>
+			<cntinfo>
+				<cntperp>
+					<cntper>Allison Bailey</cntper>
+					<cntorg>Sound GIS</cntorg>
+				</cntperp>
+				<cntaddr>
+					<addrtype>mailing address</addrtype>
+					<address>609 14th Avenue East</address>
+					<city>Seattle</city>
+					<state>WA</state>
+					<postal>98112</postal>
+				</cntaddr>
+				<cntvoice>206-459-2301</cntvoice>
+				<cntemail>allison@soundgis.com</cntemail>
+			</cntinfo>
+		</metc>
+		<metstdn>FGDC Content Standards for Digital Geospatial Metadata</metstdn>
+		<metstdv>FGDC-STD-001-1998</metstdv>
+		<mettc>local time</mettc>
+		<metextns>
+			<onlink>http://www.esri.com/metadata/esriprof80.html</onlink>
+			<metprof>ESRI Metadata Profile</metprof>
+		</metextns>
+	</metainfo>
+	<Esri><MetaID>{48B2B6A5-1216-4DF8-9BDA-933A377E613F}</MetaID><CreaDate>20060524</CreaDate><CreaTime>12305600</CreaTime><SyncOnce>TRUE</SyncOnce></Esri></metadata>

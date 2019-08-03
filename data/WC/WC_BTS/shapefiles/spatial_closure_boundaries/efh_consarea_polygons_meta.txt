@@ -1,0 +1,218 @@
+Identification_Information:
+  Citation:
+    Citation_Information:
+      Originator: National Oceanic and Atmospheric Administration, National Marine Fisheries Service, Northwest Regional Office
+      Publication_Date: 20060511
+      Title: EFH Conservation Areas off Washington, Oregon, and California for NMFS' Final Rule Implementing Amendment 19 to the Pacific Coast Groundfish Fishery Management Plan
+      Geospatial_Data_Presentation_Form: vector digital data
+  Description:
+    Abstract: These data depict Essential Fish Habitat (EFH) conservation areas off Washington, Oregon, and California.  The coordinate locations are from NMFS' Final Rule to implement Amendment 19 to the Pacific Coast Groundfish Fishery Management Plan (71 FR 27408; May 11, 2006).  In order to minimize to the extent practicable adverse effects from fishing, the final rule prohibits fishing with various gear types within these areas.  Consult the text of the final rule for specific details about each area and the management measures. The prohibitions are listed in Section 660.306 and the official coordinates are listed in Sections 660.397, 660.398, and 660.399 of the final rule.
+    Purpose: These data were developed to support implementation of NMFS' Final Rule implementing amendment 19 to the Pacific Coast Groundfish Fishery Management Plan (FMP).
+    Supplemental_Information:  These boundaries were created by an automated process to extract the coordinates from the text of the Final Rule.  Any discrepancies between these coordinates and the Federal Register will be resolved in favor of the Federal Register. 
+  Time_Period_of_Content:
+    Time_Period_Information:
+      Single_Date/Time:
+        Calendar_Date: 20060511
+    Currentness_Reference: publication date
+  Status:
+    Progress: Complete
+    Maintenance_and_Update_Frequency: None planned
+  Spatial_Domain:
+    Bounding_Coordinates:
+      West_Bounding_Coordinate: -128.767000
+      East_Bounding_Coordinate: -117.833333
+      North_Bounding_Coordinate: 48.398167
+      South_Bounding_Coordinate: 32.500000
+  Keywords:
+    Theme:
+      Theme_Keyword: groundfish
+      Theme_Keyword: essential fish habitat (EFH)
+      Theme_Keyword: final rule
+      Theme_Keyword: minimize fishing impacts
+      Theme_Keyword: fishery management plan (FMP)
+    Place:
+      Place_Keyword: Washington
+      Place_Keyword: Oregon
+      Place_Keyword: California
+      Place_Keyword: west coast
+      Place_Keyword: Pacific coast
+      Place_Keyword: Northwest Pacific Ocean
+  Access_Constraints: none
+  Use_Constraints: none
+  Point_of_Contact:
+    Contact_Information:
+      Contact_Organization_Primary:
+        Contact_Organization: NOAA, National Marine Fisheries Service, Northwest Region
+        Contact_Person: Steve Copps
+      Contact_Address:
+        Address_Type: mailing and physical address
+        Address: 7600 Sand Point Way, NE
+        City: Seattle
+        State_or_Province: WA
+        Postal_Code: 98115-0070
+        Country: U.S.A.
+      Contact_Voice_Telephone: (206) 526-6140
+      Contact_Facsimile_Telephone: (206) 526-6736
+      Contact_Electronic_Mail_Address: steve.copps@noaa.gov
+  Native_Data_Set_Environment: Microsoft Windows XP Version 5.1 (Build 2600) Service Pack 2; ESRI ArcCatalog 9.1.0.722
+Data_Quality_Information:
+  Attribute_Accuracy:
+    Attribute_Accuracy_Report: Attributes were generated via an automated process from the text of the Federal Register document.  Attributes were visually assessed for accuracy.
+  Logical_Consistency_Report: The areas were derived from the Federal Register document, and the caveats associated with the source data would apply to this line.
+  Completeness_Report: The areas are complete within the west coast Exclusive Economic Zone (EEZ).
+  Positional_Accuracy:
+    Horizontal_Positional_Accuracy:
+      Horizontal_Positional_Accuracy_Report: Horizontal accuracy is assumed to be absolute because coordinate locations were extracted in an automated process from the text of the Federal Register.
+  Lineage:
+    Source_Information:
+      Source_Citation:
+        Citation_Information:
+          Originator: National Oceanic and Atmospheric Administration, National Marine Fisheries Service
+          Publication_Date: 20060511
+          Title: Magnuson-Stevens Act Provisions; Fisheries Off West Coast States; Pacific Coast Groundfish Fishery
+          Geospatial_Data_Presentation_Form: PDF document with coordinate lists
+          Other_Citation_Details: Federal Register, Vol. 71, No. 91, page 27408.  50 CFR Part 660, [Docket No. 051213334-6119-02; I.D. 112905C], RIN 0648-AT98
+          Online_Linkage: http://www.nwr.noaa.gov/Publications/FR-Notices/2006/upload/71FR27408.pdf
+      Type_of_Source_Media: online
+      Source_Time_Period_of_Content:
+        Time_Period_Information:
+          Single_Date/Time:
+            Calendar_Date: 20060511
+        Source_Currentness_Reference: data of publication
+      Source_Citation_Abbreviation: EFH Final Rule
+      Source_Contribution: Provides coordinate list
+    Source_Information:
+      Source_Citation:
+        Citation_Information:
+          Originator: Department of Commerce (DOC), National Oceanic and Atmospheric Administration (NOAA), Office of Coast Survey (OCS), Coast Survey Development Laboratory (CSDL)
+          Publication_Date: 20011001
+          Title: U.S. Merged Vector Shoreline Derived from NOAA Nautical Charts
+          Geospatial_Data_Presentation_Form: vector digital data
+          Online_Linkage:  http://nauticalcharts.noaa.gov/csdl/ctp/cm_vs.htm
+      Type_of_Source_Media: online
+      Source_Time_Period_of_Content:
+        Time_Period_Information:
+          Range_of_Dates/Times:
+            Beginning_Date: 200110
+            Ending_Date: present
+        Source_Currentness_Reference: publication date
+      Source_Citation_Abbreviation: Merged Vector Shoreline
+      Source_Contribution: Provides mean high water shoreline delineation
+    Process_Step:
+      Process_Description:
+        (1) Extracted point coordinates and area name from Federal Register text using Perl script.  
+        (2) Created ArcInfo format line coverage.
+        (3) For areas that had the high water line as a boundary, or that overlapped with land, combined with lines from NOAA' merged vector shoreline to create closed polygons.          
+      Source_Used_Citation_Abbreviation: EFH Final Rule
+      Source_Used_Citation_Abbreviation: Merged Vector Shoreline
+      Process_Date: 200605
+Spatial_Data_Organization_Information:
+  Direct_Spatial_Reference_Method: Vector
+  Point_and_Vector_Object_Information:
+    SDTS_Terms_Description:
+      SDTS_Point_and_Vector_Object_Type: G-polygon
+      Point_and_Vector_Object_Count: 56
+Spatial_Reference_Information:
+  Horizontal_Coordinate_System_Definition:
+    Geographic:
+      Latitude_Resolution: 0.000000
+      Longitude_Resolution: 0.000000
+      Geographic_Coordinate_Units: Decimal degrees
+    Geodetic_Model:
+      Horizontal_Datum_Name: North American Datum of 1983
+      Ellipsoid_Name: Geodetic Reference System 80
+      Semi-major_Axis: 6378137.000000
+      Denominator_of_Flattening_Ratio: 298.257222
+Entity_and_Attribute_Information:
+  Detailed_Description:
+    Entity_Type:
+      Entity_Type_Label: efh_consarea_points.dbf
+      Entity_Type_Definition: attribute table       
+    Attribute:
+      Attribute_Label: FID
+      Attribute_Definition: Internal feature number.
+      Attribute_Definition_Source: ESRI
+      Attribute_Domain_Values:
+        Unrepresentable_Domain: Sequential unique whole numbers that are automatically generated.
+    Attribute:
+      Attribute_Label: Shape
+      Attribute_Definition: Feature geometry.
+      Attribute_Definition_Source: ESRI
+      Attribute_Domain_Values:
+        Unrepresentable_Domain: Coordinates defining the features.
+    Attribute:
+      Attribute_Label: AREA_NAME
+      Attribute_Definition: Name of the area
+      Attribute_Definition_Source: Final Rule
+      Attribute_Domain_Values:
+        Unrepresentable_Domain: Geographic names for the area depicted
+    Attribute:
+      Attribute_Label: PROHIBIT
+      Attribute_Definition: Fishing prohibitions within each area
+      Attribute_Definition_Source: Final Rule
+      Attribute_Domain_Values:
+        Unrepresentable_Domain: Type of fishing gear that is prohibited within the area
+    Attribute:
+      Attribute_Label: STATE
+      Attribute_Definition: State 
+      Attribute_Definition_Source: Final Rule
+      Attribute_Domain_Values:
+        Enumerated_Domain:
+          Enumerated_Domain_Value: WA
+          Enumerated_Domain_Value_Definition: Washington
+          Enumerated_Domain_Value_Definition_Source:
+      Attribute_Domain_Values:
+        Enumerated_Domain:
+          Enumerated_Domain_Value: OR
+          Enumerated_Domain_Value_Definition: Oregon
+          Enumerated_Domain_Value_Definition_Source:
+      Attribute_Domain_Values:
+        Enumerated_Domain:
+          Enumerated_Domain_Value: CA
+          Enumerated_Domain_Value_Definition: California
+          Enumerated_Domain_Value_Definition_Source:
+Distribution_Information:
+  Distributor:
+    Contact_Information:
+      Contact_Organization_Primary:
+        Contact_Organization: NOAA, National Marine Fisheries Service, Northwest Region
+        Contact_Person: Steve Copps
+      Contact_Address:
+        Address_Type: mailing and physical address
+        Address: 7600 Sand Point Way, NE
+        City: Seattle
+        State_or_Province: WA
+        Postal_Code: 98115-0070
+        Country: U.S.A.
+      Contact_Voice_Telephone: (206) 526-6140
+      Contact_Facsimile_Telephone: (206) 526-6736
+      Contact_Electronic_Mail_Address: steve.copps@noaa.gov
+  Resource_Description: Downloadable Data
+  Distribution_Liability: These data do not constitute legal boundaries.  Any discrepancies between these coordinates and the Federal Register will be resolved in favor of the Federal Register.
+  Standard_Order_Process:
+    Digital_Form:
+      Digital_Transfer_Information:
+        Format_Name: ESRI Shape File
+        File_Decompression_Technique: no compression applied
+        Transfer_Size: 0.105
+Metadata_Reference_Information:
+  Metadata_Date: 200605
+  Metadata_Contact:
+    Contact_Information:
+      Contact_Person_Primary:
+        Contact_Person: Allison Bailey
+        Contact_Organization: Sound GIS
+      Contact_Address:
+        Address_Type: mailing address
+        Address: 609 14th Avenue East
+        City: Seattle
+        State_or_Province: WA
+        Postal_Code: 98112
+      Contact_Voice_Telephone: 206-459-2301
+      Contact_Electronic_Mail_Address: allison@soundgis.com
+  Metadata_Standard_Name: FGDC Content Standards for Digital Geospatial Metadata
+  Metadata_Standard_Version: FGDC-STD-001-1998
+  Metadata_Time_Convention: local time
+  Metadata_Extensions:
+    Online_Linkage: http://www.esri.com/metadata/esriprof80.html
+    Profile_Name: ESRI Metadata Profile
