@@ -1,0 +1,115 @@
+devtools::install_github("pbs-assess/sdmTMB")
+library(ggplot2)
+library(raster)
+library(dplyr)
+library(sdmTMB)
+library(sp)
+#library(INLA) # if we want tools to make other meshes
+
+# Load combined catch and haul data 
+data <- readRDS(paste0(here::here(),"/data/AK/AK_BTS/AK_BTS.rds"))
+
+# filter to GOA survey and remove tows with 0 bottom depth
+data <- data %>% filter(SURVEY == "GOA", BOTTOM_DEPTH > 0)
+
+# center and scale depth
+data$log_depth_scaled = scale(log(data$BOTTOM_DEPTH))[,1]
+data$log_depth_scaled2 = data$log_depth_scaled ^ 2
+
+# read in the grid cell data from the survey design
+#grid_cells = read.csv(paste0(here::here(),"/data/AK/AK_BTS/survey_grids/grid_GOA.csv"))
+
+# project to UTM
+coordinates(data) <- c("LONGITUDE", "LATITUDE")
+proj4string(data) <- CRS("+proj=longlat +datum=WGS84")
+data <- as.data.frame(spTransform(data, CRS("+proj=aea +lat_1=55 +lat_2=65 +lat_0=50 +lon_0=-154 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")))
+
+colnames(data) = tolower(colnames(data))
+
+# mesh/spde for GOA (created based on experimentation), which you can pass to make_spde...or just use interactive tool meshbuilder()
+#meshbuilder() # or play with this shiny interactive tool to make a good mesh to pass to make_spde
+#Coord <- cbind(data$X, data$Y)	
+#bnd = inla.nonconvex.hull(Coord, convex=200000)		# boundary of the region of interest
+#mesh = inla.mesh.2d(loc=Coord, boundary = bnd, max.edge=c(3000000,5000000), cutoff = 50000, offset=c(100000,100000))
+
+# rescale coordinates
+data$X <- data$longitude / 10000
+data$Y <- data$latitude / 10000
+
+species = c("Dover sole","arrowtooth flounder", "Pacific halibut",
+  "walleye pollock", "rex sole", "English sole","sablefish","Pacific cod",
+  "spiny dogfish","longnose skate","big skate", "Pacific ocean perch")
+
+for(spp in 1:length(species)) {
+  data_sub = dplyr::filter(data, common_name == species[spp])
+
+  c_spde <- make_spde(data_sub$X, data_sub$Y, n_knots = 450)
+  plot_spde(c_spde)
+  
+      density_model <- sdmTMB(formula = cpue ~ log_depth_scaled + log_depth_scaled2,
+                              data = data_sub,
+                              time = "year", spde = c_spde, anisotropy = TRUE,
+                              silent = TRUE, spatial_trend = TRUE, spatial_only = FALSE,
+                              family = tweedie(link = "log")
+                              #control = sdmTMBcontrol(step.min = 0.01, step.max = 1)
+                              )
+      saveRDS(density_model, file=paste0("output/AK/",species[spp],"_density.rds"))
+}
+
+###########################################################################################################
+
+# Prepare prediction data frame based on prediction grid
+Predict_data <- readRDS(paste0(here::here(), "/data/AK/AK_BTS/Predict_data_AK.Rds"))
+Predict_data <- Predict_data %>% filter(GOA == 1) %>% select(LONG, LAT, BOTTOM_DEPTH)
+
+# make erroneous depth estimates nearshore equal to minimum depth
+Predict_data$BOTTOM_DEPTH <- ifelse(Predict_data$BOTTOM_DEPTH < min(data$BOTTOM_DEPTH), 
+                                    min(data$bottom_depth),
+                                    Predict_data$BOTTOM_DEPTH)
+
+# make prediction data frame with same covariates as went into the model fit
+Predict_data$log_depth_scaled = scale(log(Predict_data$BOTTOM_DEPTH))
+Predict_data$log_depth_scaled2 = Predict_data$log_depth_scaled ^ 2
+Predict_data$X = Predict_data$LONG / 10000
+Predict_data$Y = Predict_data$LAT / 10000
+Predict_data = select(Predict_data, X, Y, log_depth_scaled, log_depth_scaled2)
+#Predict_data %>% rename(log_depth_scaled = log_depth_scaled.V1, log_depth_scaled2 = log_depth_scaled2.V1)
+
+# make replicates for each year in data
+Predict_data_years = Predict_data
+Predict_data_years$year = min(unique(data$year))
+for(i in 2:length(unique(data$year))) {
+  Predict_data$year = sort(unique(data$year))[i]
+  Predict_data_years = rbind(Predict_data_years, Predict_data)
+}
+
+saveRDS(Predict_data_years, file=paste0("data/AK/AK_BTS/GOA_predict_data.rds")) # save prediction grid
+
+
+###########################################################################################################
+# Make plots from predictions, model fit
+
+# still something up with prediction grid.......
+p = predict(density_model, newdata=Predict_data_years, se_fit = FALSE)
+
+# plotting functions
+plot_map_point <- function(dat, column = "omega_s") {
+  ggplot(dat, aes_string("X", "Y", colour = column)) +
+    geom_point(size=0.1) +
+    xlab("Longitude") +
+    ylab("Latitude")
+}
+plot_map_raster <- function(dat, column = "omega_s") {
+  ggplot(dat, aes_string("X", "Y", fill = column)) +
+    geom_raster() +
+    scale_fill_viridis_c() +
+    xlab("Longitude") +
+    ylab("Latitude")
+}
+
+
+
+# make plot of predictions from full model (all fixed + random effects)
+plot_map_raster(p, "est") +
+  facet_wrap(~year) +
+  coord_fixed()
