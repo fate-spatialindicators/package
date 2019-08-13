@@ -1,10 +1,26 @@
-devtools::install_github("pbs-assess/sdmTMB")
+# Simplified code example for model fitting and prediction with sdmTMB
+
+#devtools::install_github("pbs-assess/sdmTMB")
+#library(INLA) # if we want tools to make other meshes
 library(ggplot2)
 library(raster)
 library(dplyr)
 library(sdmTMB)
 library(sp)
-#library(INLA) # if we want tools to make other meshes
+
+###########################################################################################################
+# options 
+
+# specify # of knots for mesh
+n_knots = 450
+
+# specify species to model
+species = c("Dover sole","arrowtooth flounder", "Pacific halibut",
+            "walleye pollock", "rex sole", "English sole","sablefish","Pacific cod",
+            "spiny dogfish","longnose skate","big skate", "Pacific ocean perch")
+
+###########################################################################################################
+# Prepare data and fit models
 
 # Load combined catch and haul data 
 data <- readRDS(paste0(here::here(),"/data/AK/AK_BTS/AK_BTS.rds"))
@@ -16,7 +32,7 @@ data <- data %>% filter(SURVEY == "GOA", BOTTOM_DEPTH > 0)
 data$log_depth_scaled = scale(log(data$BOTTOM_DEPTH))[,1]
 data$log_depth_scaled2 = data$log_depth_scaled ^ 2
 
-# read in the grid cell data from the survey design
+# read in the grid cell data from the survey design (one may choose to pre-specify which hauls are in which cells)
 #grid_cells = read.csv(paste0(here::here(),"/data/AK/AK_BTS/survey_grids/grid_GOA.csv"))
 
 # project to UTM
@@ -26,7 +42,7 @@ data <- as.data.frame(spTransform(data, CRS("+proj=aea +lat_1=55 +lat_2=65 +lat_
 
 colnames(data) = tolower(colnames(data))
 
-# mesh/spde for GOA (created based on experimentation), which you can pass to make_spde...or just use interactive tool meshbuilder()
+# mesh for GOA, which you can pass to make_spde or let it create a default mesh as below
 #meshbuilder() # or play with this shiny interactive tool to make a good mesh to pass to make_spde
 #Coord <- cbind(data$X, data$Y)	
 #bnd = inla.nonconvex.hull(Coord, convex=200000)		# boundary of the region of interest
@@ -36,14 +52,11 @@ colnames(data) = tolower(colnames(data))
 data$X <- data$longitude / 10000
 data$Y <- data$latitude / 10000
 
-species = c("Dover sole","arrowtooth flounder", "Pacific halibut",
-  "walleye pollock", "rex sole", "English sole","sablefish","Pacific cod",
-  "spiny dogfish","longnose skate","big skate", "Pacific ocean perch")
-
+# fit same model structure to each species 
 for(spp in 1:length(species)) {
   data_sub = dplyr::filter(data, common_name == species[spp])
 
-  c_spde <- make_spde(data_sub$X, data_sub$Y, n_knots = 450)
+  c_spde <- make_spde(data_sub$X, data_sub$Y, n_knots = n_knots) 
   plot_spde(c_spde)
   
       density_model <- sdmTMB(formula = cpue ~ log_depth_scaled + log_depth_scaled2,
@@ -53,12 +66,14 @@ for(spp in 1:length(species)) {
                               family = tweedie(link = "log")
                               #control = sdmTMBcontrol(step.min = 0.01, step.max = 1)
                               )
+      
       saveRDS(density_model, file=paste0("output/AK/",species[spp],"_density.rds"))
 }
 
 ###########################################################################################################
+# Prepare prediction data frame (with columns for time, coordinates, covariates)
 
-# Prepare prediction data frame based on prediction grid
+# Starting with prediction grid from the broader region
 Predict_data <- readRDS(paste0(here::here(), "/data/AK/AK_BTS/Predict_data_AK.Rds"))
 Predict_data <- Predict_data %>% filter(GOA == 1) %>% select(LONG, LAT, BOTTOM_DEPTH)
 
@@ -85,11 +100,10 @@ for(i in 2:length(unique(data$year))) {
 
 saveRDS(Predict_data_years, file=paste0("data/AK/AK_BTS/GOA_predict_data.rds")) # save prediction grid
 
-
 ###########################################################################################################
 # Make plots from predictions, model fit
 
-# still something up with prediction grid.......
+# predict from model to full prediction domain (space and time)
 p = predict(density_model, newdata=Predict_data_years, se_fit = FALSE)
 
 # plotting functions
@@ -106,8 +120,6 @@ plot_map_raster <- function(dat, column = "omega_s") {
     xlab("Longitude") +
     ylab("Latitude")
 }
-
-
 
 # make plot of predictions from full model (all fixed + random effects)
 plot_map_raster(p, "est") +
