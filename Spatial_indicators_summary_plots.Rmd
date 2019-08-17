@@ -6,6 +6,7 @@ output:
 editor_options:
   chunk_output_type: inline
 ---
+Author: Jordan Watson (jordan.watson@noaa.gov)
 
 When you guys create a new R notebook, do you ever think of the title of that cheesy romance/drama (I don't know if it's cheesy, I never actually saw it) called, "The Notebook"?
 
