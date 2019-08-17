@@ -1,0 +1,341 @@
+---
+title: "Spatial indicators workshop - spatial shifts in fisheries"
+output:
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: inline
+---
+
+When you guys create a new R notebook, do you ever think of the title of that cheesy romance/drama (I don't know if it's cheesy, I never actually saw it) called, "The Notebook"?
+
+```{r load_packages,message=F,warning=F}
+library(broom)
+library(tidyverse)
+library(ggforce) # for plotting ellipses
+library(gridExtra)
+```
+
+```{r load_functions,message=F,warning=F}
+source("Spatial_indicators_functions_Woillez2009_modified.R")
+```
+
+This next chunk will look different for you. Here I'm just reading in the AK fish ticket data. 
+Note that "p_fshy" is the name of the individual fishery permit type. For West Coast hake, this would perhaps be "ASHOP" or something instead of "M07B", for example.
+
+```{r subset_data}
+#keep = c("B 05B", "B 06B", "B 26B", "B 61B", "C 06B",  "C 61B", "C 91B", "M 05B", "M 06B",
+#         "M 09B", "M 26B", "M 91B")
+
+keep = c("M 05B", "M 06B", "M 09B", "M 26B", "C 61B", "C 91B","M 91B","M 7HB","M 7HG","M 7IB","M 7IG",
+         "M 7FB","M 7GB","M 07B")
+
+sub = readRDS("Data/subset_pfxcommercial_groundfish.rds") %>% 
+  dplyr::filter(p_fshy%in% keep) %>% 
+  mutate(stat6=as.character(stat6)) %>% 
+  mutate(year=as.numeric(year))
+```
+
+So the next chunk is not totally necessary. In this case, we are adjusting latitudes and longitudes by the catch (in pounds) at each location. But the CG function we are going to use has a built-in weighting function, too. So you could skip this step if you wanted to. 
+"cadfg" for us is the individual vessel id.
+
+```{r weight_locations}
+mll = sub %>% 
+  group_by(year, cadfg, p_fshy) %>%
+  summarize(n = n(), 
+            mlon = sum(lon*g_pounds, na.rm=T)/sum(g_pounds[which(!is.na(lon))],na.rm=T),
+            mlat = sum(lat*g_pounds, na.rm=T)/sum(g_pounds[which(!is.na(lat))],na.rm=T)) %>%
+  dplyr::filter(mlon!=0 & mlat!=0)
+```
+
+Calculate center of gravity and inertia using Woillez's cgi function. If you did not weight latitudes and longitudes as above, then you could add a z term inside the function.
+```{r calculate_cgi}
+mycgi <- mll %>% 
+  group_by(year,p_fshy) %>% 
+  do((cgi(x=.$mlon,y=.$mlat) %>% data.frame)) %>% 
+  data.frame
+
+#  A version with catch weighting
+#mycgi <- mll %>% 
+#  group_by(year,p_fshy) %>% 
+#  do((cgi(x=.$mlon,y=.$mlat,z=.$g_pounds) %>% data.frame)) %>% 
+#  data.frame
+```
+
+So the output for the cgi function is a little...well different. The first two rows are duplicated for the first few columns. The difference occurs only in the xaxe1, yaxe1, xaxe2, yaxe2 values. These create the four end points of the cross that we plot when we display the inertial ranges. 
+
+```{r examine_data}
+head(mycgi)
+```
+
+Let's just see what the centers of gravity look like.
+
+```{r plot_cgi_points}
+mycgi %>% 
+  dplyr::select(year,p_fshy,xcg,ycg) %>% 
+  distinct() %>% 
+  ggplot(aes(xcg,ycg)) + 
+  geom_point() + 
+  facet_wrap(~p_fshy)
+```
+
+Create a function that reformats these kinda funky data so they can be plotted in ggplot more effectively. I'll include two versions of the function. One allows you to include multiple fisheries for faceting. The other is just for a single chunk of data. I'm gonna use the one with p_fshy in it but you may prefer the one without. 
+
+```{r create_inertia_function}
+#mycgifun <- function(mycgi){
+#  return(bind_cols(mycgi %>% 
+#            dplyr::select(year,xaxe1,xaxe2) %>% 
+#            gather(xaxis,xval,-c(year)) %>% 
+#            dplyr::select(-xaxis),
+#          mycgi %>% dplyr::select(year,yaxe1,yaxe2) %>% 
+#            gather(yaxis,yval,-year) %>% 
+#            dplyr::select(-yaxis,-year)))
+#}
+
+mycgifun <- function(mycgi){
+  return(bind_cols(mycgi %>% 
+            dplyr::select(year,xaxe1,xaxe2,p_fshy) %>% 
+            gather(xaxis,xval,-c(year,p_fshy)) %>% 
+            dplyr::select(-xaxis),
+          mycgi %>% dplyr::select(year,yaxe1,yaxe2,p_fshy) %>% 
+            gather(yaxis,yval,-c(year,p_fshy)) %>% 
+            dplyr::select(-yaxis,-year)))
+}
+```
+
+Let's use this function and just plot two of these different fisheries in p_fshy
+
+```{r}
+myfish <- c("C 61B","C 91B")
+
+mycgifun(mycgi %>% filter(p_fshy%in%c(myfish))) %>% 
+  filter(!is.nan(xval)) %>% 
+  ggplot(aes(xval,yval,fill=factor(year))) +
+  geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.1) +
+  facet_wrap(~p_fshy) + 
+  theme_bw()
+```
+
+For each fishery I will plot things two different ways - overlain ellipses and crosses faceted by year. 
+```{r C61B_ellipses}
+#  Explore C 61B
+#png("Figures/C61B_Ellipses.png",width=8,height=8,units="in",res=200)
+mycgifun(mycgi %>% filter(p_fshy=="C 61B")) %>% 
+  ggplot(aes(xval,yval,fill=factor(year))) +
+  geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.1) +
+  theme_bw() + 
+  theme(legend.position = "none")
+#dev.off()  
+```
+
+```{r C61B_crosses}
+#png("Figures/C61B_Crosses.png",width=8,height=8,units="in",res=200)
+ggplot() + 
+  geom_path(data=mycgi %>% filter(p_fshy=="C 61B"),aes(xaxe1,yaxe1)) + 
+  geom_path(data=mycgi %>% filter(p_fshy=="C 61B"),aes(xaxe2,yaxe2)) +
+  facet_wrap(~year,ncol=7) + 
+  geom_vline(xintercept = (mycgi %>% filter(p_fshy=="C 61B") %>% summarise(mean(xcg)))[[1]],linetype=2) + 
+  geom_hline(yintercept = (mycgi %>% filter(p_fshy=="C 61B") %>% summarise(mean(ycg)))[[1]],linetype=2) +
+  ggtitle("Sablefish longline >=60'")
+#dev.off()
+```
+
+
+```{r C91B_ellipses}
+#  Explore C 91B
+#png("Figures/C91B_Ellipses.png",width=8,height=8,units="in",res=200)
+mycgifun(mycgi %>% filter(p_fshy=="C 91B")) %>% 
+  ggplot(aes(xval,yval,fill=factor(year))) +
+  geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.1)  +
+  theme_bw() + 
+  theme(legend.position = "none")
+#dev.off()
+```
+
+
+```{r C91B_crosses}
+#png("Figures/C91B_Crosses.png",width=8,height=8,units="in",res=200)
+ggplot() + 
+  geom_path(data=mycgi %>% filter(p_fshy=="C 91B"),aes(xaxe1,yaxe1)) + 
+  geom_path(data=mycgi %>% filter(p_fshy=="C 91B"),aes(xaxe2,yaxe2)) +
+  facet_wrap(~year,ncol=7) + 
+  geom_vline(xintercept = (mycgi %>% filter(p_fshy=="C 91B") %>% summarise(mean(xcg)))[[1]],linetype=2) + 
+  geom_hline(yintercept = (mycgi %>% filter(p_fshy=="C 91B") %>% summarise(mean(ycg)))[[1]],linetype=2) +
+  ggtitle("Sablefish pot >=60'")
+
+#dev.off()
+```
+
+```{r M06B_ellipses}
+#  Explore M 06B
+#png("Figures/M06B_Ellipses.png",width=8,height=8,units="in",res=200)
+mycgifun(mycgi %>% filter(p_fshy=="M 06B")) %>% 
+  ggplot(aes(xval,yval,fill=factor(year))) +
+  geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.1)  +
+  theme_bw() + 
+  theme(legend.position = "none")
+#dev.off()
+```
+
+
+```{r M06B_crosses}
+#png("Figures/M06B_Crosses.png",width=8,height=8,units="in",res=200)
+ggplot() + 
+  geom_path(data=mycgi %>% filter(p_fshy=="M 06B"),aes(xaxe1,yaxe1)) + 
+  geom_path(data=mycgi %>% filter(p_fshy=="M 06B"),aes(xaxe2,yaxe2)) +
+  facet_wrap(~year,ncol=7) + 
+  geom_vline(xintercept = (mycgi %>% filter(p_fshy=="M 06B") %>% summarise(mean(xcg)))[[1]],linetype=2) + 
+  geom_hline(yintercept = (mycgi %>% filter(p_fshy=="M 06B") %>% summarise(mean(ycg)))[[1]],linetype=2) +
+  ggtitle("Groundfish longline <60'")
+
+#dev.off()
+```
+
+
+```{r M09B_ellipses}
+#  Explore M 09B
+#png("Figures/M09B_Ellipses.png",width=8,height=8,units="in",res=200)
+mycgifun(mycgi %>% filter(p_fshy=="M 09B")) %>% 
+  ggplot(aes(xval,yval,fill=factor(year))) +
+  geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.1)  +
+  theme_bw() + 
+  theme(legend.position = "none")
+#dev.off()
+```
+
+
+```{r M09B_crosses}
+#png("Figures/M09B_Crosses.png",width=8,height=8,units="in",res=200)
+ggplot() + 
+  geom_path(data=mycgi %>% filter(p_fshy=="M 09B"),aes(xaxe1,yaxe1)) + 
+  geom_path(data=mycgi %>% filter(p_fshy=="M 09B"),aes(xaxe2,yaxe2)) +
+  facet_wrap(~year,ncol=7) + 
+  geom_vline(xintercept = (mycgi %>% filter(p_fshy=="M 09B") %>% summarise(mean(xcg)))[[1]],linetype=2) + 
+  geom_hline(yintercept = (mycgi %>% filter(p_fshy=="M 09B") %>% summarise(mean(ycg)))[[1]],linetype=2)
+#dev.off()
+```
+
+```{r M7HB_ellipses}
+#  Explore M7HB
+#png("Figures/M7HB_Ellipses.png",width=8,height=8,units="in",res=200)
+mycgifun(mycgi %>% filter(p_fshy=="M 7HB")) %>% 
+  ggplot(aes(xval,yval,fill=factor(year))) +
+  geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.1)  +
+  theme_bw() + 
+  theme(legend.position = "none")
+#dev.off()
+```
+
+
+```{r M7HB_crosses}
+#png("Figures/M7HB_Crosses.png",width=8,height=8,units="in",res=200)
+ggplot() + 
+  geom_path(data=mycgi %>% filter(p_fshy=="M 7HB"),aes(xaxe1,yaxe1)) + 
+  geom_path(data=mycgi %>% filter(p_fshy=="M 7HB"),aes(xaxe2,yaxe2)) +
+  facet_wrap(~year,ncol=7) + 
+  geom_vline(xintercept = (mycgi %>% filter(p_fshy=="M 7HB") %>% summarise(mean(xcg)))[[1]],linetype=2) + 
+  geom_hline(yintercept = (mycgi %>% filter(p_fshy=="M 7HB") %>% summarise(mean(ycg)))[[1]],linetype=2) +
+  ggtitle("M7HB")
+#dev.off()
+```
+
+
+```{r All_ellipses}
+#png("Figures/All_Ellipses.png",width=8,height=8,units="in",res=200)
+grid.arrange(
+  mycgifun(mycgi %>% filter(p_fshy=="C 61B")) %>% 
+    ggplot(aes(xval,yval,fill=factor(year))) +
+    geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.1) + 
+    theme_bw() + 
+    theme(legend.position="none") + 
+    ggtitle("Sablefish longline >=60'"), 
+  mycgifun(mycgi %>% filter(p_fshy=="C 91B")) %>% 
+    ggplot(aes(xval,yval,fill=factor(year))) +
+    geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.1) + 
+    theme_bw() + 
+    theme(legend.position="none") + 
+    ggtitle("Sablefish pot >=60"),
+  mycgifun(mycgi %>% filter(p_fshy=="M 06B")) %>% 
+    ggplot(aes(xval,yval,fill=factor(year))) +
+    geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.1) + 
+    theme_bw() + 
+    theme(legend.position="none") + 
+    ggtitle("Groundfish longline <60"),
+  mycgifun(mycgi %>% filter(p_fshy=="M 09B")) %>% 
+    ggplot(aes(xval,yval,fill=factor(year))) +
+    geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.1) + 
+    theme_bw() + 
+    theme(legend.position="none") + 
+    ggtitle("Groundfish pot <60"), 
+  mycgifun(mycgi %>% filter(p_fshy=="M 7HB")) %>% 
+    ggplot(aes(xval,yval,fill=factor(year))) +
+    geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.1) + 
+    theme_bw() + 
+    theme(legend.position="none") + 
+    ggtitle("Groundfish trawl 90-125'")) 
+#dev.off()
+```
+
+So now lets explore the Global Index of Collocation (GIC)
+```{r GIC_1}
+# The GIC dealie seems to prefer you to use unweighted location values and not leave the Z field blank. 
+#  Create a test subset.
+test <- sub %>% filter(p_fshy=="M 06B")
+gic(x1=test$lon[test$year==2018],y1=test$lat[test$year==2018],z1=test$g_pounds[test$year==2018],
+    x2=test$lon[test$year!=2018],y2=test$lat[test$year!=2018],z2=test$g_pounds[test$year!=2018])
+```
+
+
+One of the proposed explorations with GIC is to compare how a given year compares to the other years. We can do this either by comparing a year to all years (including itself, like an anomaly) or to all years except itself (i.e., leave one out). In the below code, I use a loop to calculate two different GIC's for the above fishery. In the first one (just called gic) we do the leave one out approach. In gic2, we include all years.
+
+```{r GIC_2}
+#  Super ghetto loop style, yo.
+myvec <- sort(unique(test$year))
+myout <- data.frame()
+for(i in 1:length(myvec)){
+  yearvec <- myvec[-i]
+  myout[i,1] <- myvec[i]  
+  myout[i,2] <- (gic(x1=test$lon[test$year==myvec[i]],y1=test$lat[test$year==myvec[i]],z1=test$g_pounds[test$year==myvec[i]],
+                     x2=test$lon[test$year%in%myvec[-i]],y2=test$lat[test$year%in%myvec[-i]],z2=test$g_pounds[test$year%in%myvec[-i]]))
+  myout[i,3] <- (gic(x1=test$lon[test$year==myvec[i]],y1=test$lat[test$year==myvec[i]],z1=test$g_pounds[test$year==myvec[i]],
+                     x2=test$lon,y2=test$lat,z2=test$g_pounds))
+}
+
+names(myout) <- c("year","gic","gic2")
+
+#  Now overlay the two versions and see how much they differ. 
+myout %>% 
+  ggplot() + 
+  geom_line(aes(year,gic)) + 
+  geom_line(aes(year,gic2),linetype=2)
+```
+
+No let's try the all years version of this but in tidyverse. I get a warning message when running this in markdown but I didn't in a normal R script. Seems to work fine so I'm ignoring it for now. 
+
+```{r GIC_tidy,warning=F}
+mydat <- sub %>% 
+  filter(p_fshy%in%c("M 06B","C 61B"))
+
+mydat %>% 
+    group_by(p_fshy,year) %>% 
+      summarise(gic=gic(x1=lon,
+                        y1=lat,
+                        z1=g_pounds,
+                        x2=mydat$lon[mydat$p_fshy==p_fshy], # These funky lines allow us to refer to all years of the data and not just the current group_by year...while also subsetting for the group_by fishery. 
+                        y2=mydat$lat[mydat$p_fshy==p_fshy],
+                        z2=mydat$g_pounds[mydat$p_fshy==p_fshy]))
+```
+
+Now let's do this for a bunch of fisheries and plot the results.
+
+```{r GIC_tidy_plot, warning=F}
+sub %>% 
+  group_by(p_fshy,year) %>% 
+  summarise(gic=gic(x1=lon,y1=lat,z1=g_pounds,
+                    x2=mydat$lon[mydat$p_fshy==p_fshy],
+                    y2=mydat$lat[mydat$p_fshy==p_fshy],
+                    z2=mydat$g_pounds[mydat$p_fshy==p_fshy])) %>% 
+  ggplot(aes(year,gic,linetype=p_fshy)) + 
+  geom_line()
+```
+
