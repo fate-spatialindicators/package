@@ -101,18 +101,12 @@ for(i in 2:length(unique(data$year))) {
 saveRDS(Predict_data_years, file=paste0("data/AK/AK_BTS/GOA_predict_data.rds")) # save prediction grid
 
 ###########################################################################################################
-# Make plots from predictions, model fit
+# Make plots from predictions, model fit (you can wrap this in a loop to perform by species)
 
 # predict from model to full prediction domain (space and time)
 p = predict(density_model, newdata=Predict_data_years, se_fit = FALSE)
 
 # plotting functions
-plot_map_point <- function(dat, column = "omega_s") {
-  ggplot(dat, aes_string("X", "Y", colour = column)) +
-    geom_point(size=0.1) +
-    xlab("Longitude") +
-    ylab("Latitude")
-}
 plot_map_raster <- function(dat, column = "omega_s") {
   ggplot(dat, aes_string("X", "Y", fill = column)) +
     geom_raster() +
