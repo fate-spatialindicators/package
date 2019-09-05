@@ -25,12 +25,8 @@ species = c("Dover sole","arrowtooth flounder", "Pacific halibut",
 # Load combined catch and haul data 
 data <- readRDS(paste0(here::here(),"/data/AK/AK_BTS/AK_BTS.rds"))
 
-# filter to GOA survey and remove tows with 0 bottom depth
-data <- data %>% filter(SURVEY == "GOA", BOTTOM_DEPTH > 0)
-
-# center and scale depth
-data$log_depth_scaled = scale(log(data$BOTTOM_DEPTH))[,1]
-data$log_depth_scaled2 = data$log_depth_scaled ^ 2
+# filter to GOA survey, remove tows with 0 bottom depth, and drop 2001 year when survey was incomplete
+data <- data %>% filter(SURVEY == "GOA", BOTTOM_DEPTH > 0, YEAR != 2001)
 
 # read in the grid cell data from the survey design (one may choose to pre-specify which hauls are in which cells)
 #grid_cells = read.csv(paste0(here::here(),"/data/AK/AK_BTS/survey_grids/grid_GOA.csv"))
@@ -54,10 +50,18 @@ data$Y <- data$latitude / 10000
 
 # fit same model structure to each species 
 for(spp in 1:length(species)) {
-  data_sub = dplyr::filter(data, common_name == species[spp])
+  data_sub = data %>% dplyr::filter(common_name == species[spp]) %>% 
+    dplyr::filter(latitude > min(latitude[which(cpue>0)]),
+                  latitude <= max(latitude[which(cpue>0)]),
+                  longitude > min(longitude[which(cpue>0)]),
+                  longitude < max(longitude[which(cpue>0)]))
 
   c_spde <- make_spde(data_sub$X, data_sub$Y, n_knots = n_knots) 
   plot_spde(c_spde)
+  
+  # center and scale depth
+  data_sub$log_depth_scaled = scale(log(data_sub$bottom_depth))[,1]
+  data_sub$log_depth_scaled2 = data_sub$log_depth_scaled ^ 2
   
       density_model <- sdmTMB(formula = cpue ~ log_depth_scaled + log_depth_scaled2,
                               data = data_sub,
