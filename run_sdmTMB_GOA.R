@@ -48,8 +48,8 @@ colnames(data) = tolower(colnames(data))
 data$X <- data$longitude / 10000
 data$Y <- data$latitude / 10000
 
-# center year
-data$year_centered = data$year - mean(unique(data$year)) # set intercept to mean, or other value to roughly center year
+# center year (commented out since we are currently doing this internally in sdmTMB)
+# data$year_centered = data$year - mean(unique(data$year)) # set intercept to mean, or other value to roughly center year
 
 # fit same model structure to each species 
 for(spp in 1:length(species)) {
@@ -66,7 +66,7 @@ for(spp in 1:length(species)) {
   data_sub$log_depth_scaled = scale(log(data_sub$bottom_depth))[,1]
   data_sub$log_depth_scaled2 = data_sub$log_depth_scaled ^ 2
   
-      density_model <- sdmTMB(formula = cpue ~ log_depth_scaled + log_depth_scaled2 + year_centered,
+      density_model <- sdmTMB(formula = cpue ~ log_depth_scaled + log_depth_scaled2 + as.factor(year),
                               data = data_sub,
                               time = "year", spde = c_spde, anisotropy = TRUE,
                               silent = TRUE, spatial_trend = TRUE, spatial_only = FALSE,
@@ -102,7 +102,6 @@ Predict_data_years = Predict_data
 Predict_data_years$year = min(unique(data$year))
 for(i in 2:length(unique(data$year))) {
   Predict_data$year = sort(unique(data$year))[i]
-  Predict_data$year_centered = sort(unique(data$year))[i] - mean(unique(data$year))
   Predict_data_years = rbind(Predict_data_years, Predict_data)
 }
 
