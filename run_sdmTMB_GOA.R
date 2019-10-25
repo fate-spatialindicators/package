@@ -12,7 +12,7 @@ library(sp)
 # options 
 
 # specify # of knots for mesh
-n_knots = 450
+n_knots = 750
 
 # specify species to model
 species = c("Dover sole","arrowtooth flounder", "Pacific halibut",
@@ -68,8 +68,9 @@ for(spp in 1:length(species)) {
   
       density_model <- sdmTMB(formula = cpue ~ log_depth_scaled + log_depth_scaled2 + as.factor(year),
                               data = data_sub,
-                              time = "year", spde = c_spde, anisotropy = TRUE,
-                              silent = TRUE, spatial_trend = TRUE, spatial_only = FALSE,
+                              time = "year", 
+                              spde = c_spde, 
+                              anisotropy = TRUE,
                               family = tweedie(link = "log")
                               #control = sdmTMBcontrol(step.min = 0.01, step.max = 1)
                               )
@@ -85,7 +86,7 @@ Predict_data <- readRDS(paste0(here::here(), "/data/AK/AK_BTS/Predict_data_AK.Rd
 Predict_data <- Predict_data %>% filter(GOA == 1) %>% select(LONG, LAT, BOTTOM_DEPTH)
 
 # make erroneous depth estimates nearshore equal to minimum depth
-Predict_data$BOTTOM_DEPTH <- ifelse(Predict_data$BOTTOM_DEPTH < min(data$BOTTOM_DEPTH), 
+Predict_data$BOTTOM_DEPTH <- ifelse(Predict_data$BOTTOM_DEPTH < min(data$bottom_depth), 
                                     min(data$bottom_depth),
                                     Predict_data$BOTTOM_DEPTH)
 
