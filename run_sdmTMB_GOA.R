@@ -54,10 +54,10 @@ data$Y <- data$latitude / 10000
 # fit same model structure to each species 
 for(spp in 1:length(species)) {
   data_sub = data %>% dplyr::filter(common_name == species[spp]) %>% 
-    dplyr::filter(latitude > min(latitude[which(cpue>0)]),
+    dplyr::filter(latitude >= min(latitude[which(cpue>0)]),
                   latitude <= max(latitude[which(cpue>0)]),
-                  longitude > min(longitude[which(cpue>0)]),
-                  longitude < max(longitude[which(cpue>0)]))
+                  longitude >= min(longitude[which(cpue>0)]),
+                  longitude <= max(longitude[which(cpue>0)]))
 
   c_spde <- make_spde(data_sub$X, data_sub$Y, n_knots = n_knots) 
   plot_spde(c_spde)
