@@ -115,9 +115,10 @@ residuals_plots[[spp]] = plot_map_point(data, "residuals") + facet_wrap(~year) +
   coord_fixed() + scale_color_gradient2() + ggtitle(species[spp])
 # check convergence
 sd = as.data.frame(summary(TMB::sdreport(d$tmb_obj)))
-sink(file = "output/AK/sdreport.txt")
+sink(file = "output/AK/sdreport.txt", append = TRUE)
 print(species[spp])
 print(d$sd_report)
+sink()
 # check whether AR1 assumption is supported in models where fields are not IID, printing estimate and 95%CI for AR1 param
 #print("AR1 estimate")
 #print(sd$Estimate[row.names(sd) == "ar1_phi"])
@@ -169,8 +170,6 @@ intercept_plots[[spp]] = plot_map_raster(dplyr::filter(p,year==min(Predict_data_
 }
 
 
-sink()
-
 # save results
 save.image(file = "output/AK/plotdata_all.Rdata")
 
@@ -183,12 +182,14 @@ ggsave(filename = "figures/AK/AK_BTS/ellipses.pdf",
                           left = grid::textGrob("Northings (10s km)", rot = 90, vjust = 0.2)),
        width = 7, height = 9, units = c("in"))
 # plot legend separately for now
+pdf(file = "figures/AK/AK_BTS/ellipses_legend.pdf", width = 1, height = 4)
 plot_legend <- mycgifun(mycgi[[1]]) %>% 
   ggplot(aes(xval,yval,fill=factor(year))) +
   geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.1)
 legend <- cowplot::get_legend(plot_legend)
 grid::grid.newpage()
 grid::grid.draw(legend)
+dev.off()
 # plot GIC by year
 ggsave(filename = "figures/AK/AK_BTS/GIC.pdf",
        plot = arrangeGrob(grobs = gic_plots, ncol = 4, bottom = "Year",
