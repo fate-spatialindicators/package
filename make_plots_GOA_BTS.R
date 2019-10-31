@@ -137,35 +137,16 @@ spatiotemporal_plots[[spp]] = plot_map_raster(p, "epsilon_st") +
   coord_fixed() +
   ggtitle(paste0(species[spp],"_ST"))
 
-# make plot of general spatial pattern of theta
-if(spp != length(species)){
-  trend_plots[[spp]] = plot_map_raster(dplyr::filter(p,year==min(Predict_data_years$year)), "zeta_s") +
-    theme(plot.title = element_blank(),
-          axis.title.x = element_text(margin = margin(t = -20)),
-          axis.text = element_blank(),
-          legend.key.width = unit(0.1,"cm"),
-          legend.title = element_blank(),
-          legend.position = c(0.05,0.85)) +
-    labs(x = "trend", y = species[spp])
-}else{
-  trend_plots[[spp]] = plot_map_raster(dplyr::filter(p,year==min(Predict_data_years$year)), "zeta_s") +
-    theme(plot.title = element_blank(),
-          axis.title.x = element_text(margin = margin(t = -20)),
-          legend.key.width = unit(0.1,"cm"),
-          legend.title = element_blank(),
-          legend.position = c(0.1,0.8)) +
-    labs(x = "trend", y = species[spp])
-}
-# make plot of spatial intercept
-intercept_plots[[spp]] = plot_map_raster(dplyr::filter(p,year==min(Predict_data_years$year)), "omega_s") +
-  theme(plot.title = element_blank(),
-        axis.title.x = element_text(margin = margin(t = -20)),
-        axis.title.y = element_blank(),
-        axis.text = element_blank(),
-        legend.key.width = unit(0.2,"cm"),
-        legend.title = element_blank(),
-        legend.position = c(0.1,0.8)) +
-  labs(x = "intercept")
+# TO DO: make plot of average biomass, rather than spatial intercept as below
+#intercept_plots[[spp]] = plot_map_raster(dplyr::filter(p,year==min(Predict_data_years$year)), "omega_s") +
+#  theme(plot.title = element_blank(),
+#        axis.title.x = element_text(margin = margin(t = -20)),
+#        axis.title.y = element_blank(),
+#        axis.text = element_blank(),
+#        legend.key.width = unit(0.2,"cm"),
+#        legend.title = element_blank(),
+#        legend.position = c(0.1,0.8)) +
+#  labs(x = "intercept")
 
 }
 
