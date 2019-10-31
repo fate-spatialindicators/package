@@ -1,0 +1,233 @@
+library(sdmTMB)
+library(ggplot2)
+library(viridis)
+library(tidyverse)
+library(fpc)
+library(gridExtra)
+library(sp)
+library(broom)
+library(ggforce) # for plotting ellipses
+
+Predict_data_years = readRDS("data/AK/AK_BTS/GOA_predict_data.rds") # save prediction grid
+
+species = c("Dover sole","arrowtooth flounder", "Pacific halibut",
+            "walleye pollock", "rex sole", "English sole","sablefish","Pacific cod",
+            "spiny dogfish","longnose skate","big skate", "Pacific ocean perch")
+
+anisotropy_plots = list()
+qq_plots = list()
+residuals_plots = list()
+prediction_plots = list()
+spatiotemporal_plots = list()
+trend_plots = list()
+trend_cluster_plots = list()
+intercept_plots = list()
+intercept_cluster_plots = list()
+COG_plots_N = list()
+COG_plots_E = list()
+all_clust = NULL
+mycgi = list()
+mycgi_cross_plots = list()
+mycgi_ellipse_plots = list()
+gic_plots = list()
+
+# plotting functions
+plot_map_point <- function(dat, column = "omega_s") {
+  ggplot(dat, aes_string("X", "Y", colour = column)) +
+    geom_point(size=0.1) +
+    xlab("Longitude") +
+    ylab("Latitude")
+}
+plot_map_raster <- function(dat, column = "omega_s") {
+  ggplot(dat, aes_string("X", "Y", fill = column)) +
+    geom_raster() +
+    scale_fill_viridis_c() +
+    xlab("Longitude") +
+    ylab("Latitude")
+}
+
+# functions to calculate COGs and inertia in 2 dimensions following Jordan's approach
+source("Spatial_indicators_functions_Woillez2009_modified.R")
+mycgifun <- function(mycgi){
+  return(bind_cols(mycgi %>% 
+                     dplyr::select(year,xaxe1,xaxe2) %>% 
+                     gather(xaxis,xval,-c(year)) %>% 
+                     dplyr::select(-xaxis),
+                   mycgi %>% dplyr::select(year,yaxe1,yaxe2) %>% 
+                     gather(yaxis,yval,-year) %>% 
+                     dplyr::select(-yaxis,-year)))
+}
+
+# loop over species
+for(spp in 1:length(species)) {
+  d = readRDS(paste0("output/AK/", species[spp],"_density.rds"))
+  p = predict(d, newdata=Predict_data_years)
+  
+  # calculate COGs and inertia in 2 dimensions
+  mycgi[[spp]] <- p %>% 
+    group_by(year) %>% 
+    do((cgi(x=.$X,y=.$Y,z=exp(.$est)) %>% data.frame)) %>% 
+    data.frame
+  
+  mycgi_ellipse_plots[[spp]] <- mycgifun(mycgi[[spp]]) %>% 
+    ggplot(aes(xval,yval,fill=factor(year))) +
+    geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.1) +
+    scale_y_continuous(expand = expand_scale(mult = .15)) +
+    theme_bw() + 
+    theme(legend.position = "none", axis.title=element_blank()) +
+    ggtitle(species[spp])
+  
+  mycgi_cross_plots[[spp]] <- ggplot() + 
+    geom_path(data=mycgi[[spp]],aes(xaxe1,yaxe1)) + 
+    geom_path(data=mycgi[[spp]],aes(xaxe2,yaxe2)) +
+    facet_wrap(~year,ncol=5) + 
+    geom_vline(xintercept = (mycgi[[spp]] %>% summarise(mean(xcg)))[[1]],linetype=2) + 
+    geom_hline(yintercept = (mycgi[[spp]] %>% summarise(mean(ycg)))[[1]],linetype=2) +
+    xlab("Eastings (10s km)") +
+    ylab("Northings (10s km)") +
+    ggtitle(paste0(species[spp],"_COG_Inertia"))
+  
+  # global index of collocation, comparing all years to individual years
+  gic_plots[[spp]] <- p %>% 
+    group_by(year) %>% 
+    summarise(gic=gic(x1=X,
+                      y1=Y,
+                      z1=exp(est),
+                      x2=p$X, # These funky lines allow us to refer to all years of the data and not just the current group_by year
+                      y2=p$Y,
+                      z2=exp(p$est))) %>%
+    ggplot(aes(year,gic)) + 
+    geom_line() +
+    theme(axis.title=element_blank()) +
+    ggtitle(species[spp])
+  
+## model checking
+# check anisotropy
+anisotropy_plots[[spp]] = plot_anisotropy(d) +
+  ggtitle(paste0(species[spp],"_aniso"))
+## residuals
+data = select(d$data, X, Y, cpue, year)
+data$residuals = residuals(d)
+# qq plots
+qq_plots[[spp]] = qqnorm(data$residuals)
+# spatial residuals
+residuals_plots[[spp]] = plot_map_point(data, "residuals") + facet_wrap(~year) + geom_point(size=0.05, alpha=0.1) +
+  coord_fixed() + scale_color_gradient2() + ggtitle(species[spp])
+# check convergence
+sd = as.data.frame(summary(TMB::sdreport(d$tmb_obj)))
+sink(file = "output/AK/sdreport.txt")
+print(species[spp])
+print(d$sd_report)
+# check whether AR1 assumption is supported in models where fields are not IID, printing estimate and 95%CI for AR1 param
+#print("AR1 estimate")
+#print(sd$Estimate[row.names(sd) == "ar1_phi"])
+#print("AR1 parameter 95% CI")
+#print(sd$Estimate[row.names(sd) == "ar1_phi"] +
+# c(-2, 2) * sd$`Std. Error`[row.names(sd) == "ar1_phi"])
+
+# make plot of predictions from full model (all fixed + random effects)
+prediction_plots[[spp]] = plot_map_raster(p, "est") +
+  facet_wrap(~year) +
+  coord_fixed() +
+  ggtitle(paste0(species[spp],"_predicted_density"))
+# make plot of predictions from spatiotemporal random effects
+spatiotemporal_plots[[spp]] = plot_map_raster(p, "epsilon_st") +
+  facet_wrap(~year) +
+  coord_fixed() +
+  ggtitle(paste0(species[spp],"_ST"))
+
+# make plot of general spatial pattern of theta
+if(spp != length(species)){
+  trend_plots[[spp]] = plot_map_raster(dplyr::filter(p,year==min(Predict_data_years$year)), "zeta_s") +
+    theme(plot.title = element_blank(),
+          axis.title.x = element_text(margin = margin(t = -20)),
+          axis.text = element_blank(),
+          legend.key.width = unit(0.1,"cm"),
+          legend.title = element_blank(),
+          legend.position = c(0.05,0.85)) +
+    labs(x = "trend", y = species[spp])
+}else{
+  trend_plots[[spp]] = plot_map_raster(dplyr::filter(p,year==min(Predict_data_years$year)), "zeta_s") +
+    theme(plot.title = element_blank(),
+          axis.title.x = element_text(margin = margin(t = -20)),
+          legend.key.width = unit(0.1,"cm"),
+          legend.title = element_blank(),
+          legend.position = c(0.1,0.8)) +
+    labs(x = "trend", y = species[spp])
+}
+# make plot of spatial intercept
+intercept_plots[[spp]] = plot_map_raster(dplyr::filter(p,year==min(Predict_data_years$year)), "omega_s") +
+  theme(plot.title = element_blank(),
+        axis.title.x = element_text(margin = margin(t = -20)),
+        axis.title.y = element_blank(),
+        axis.text = element_blank(),
+        legend.key.width = unit(0.2,"cm"),
+        legend.title = element_blank(),
+        legend.position = c(0.1,0.8)) +
+  labs(x = "intercept")
+
+}
+
+
+sink()
+
+# save results
+save.image(file = "output/AK/plotdata_all.Rdata")
+
+# plot COG and inertia as crosses and ellipses separately
+ggsave(filename = "figures/AK/AK_BTS/crosses.pdf",
+       plot = marrangeGrob(grobs = mycgi_cross_plots, nrow = 1, ncol = 1),
+       width = 7, height = 7, units = c("in"))
+ggsave(filename = "figures/AK/AK_BTS/ellipses.pdf",
+       plot = arrangeGrob(grobs = mycgi_ellipse_plots, ncol = 4, bottom = "Eastings (10s km)",
+                          left = grid::textGrob("Northings (10s km)", rot = 90, vjust = 0.2)),
+       width = 7, height = 9, units = c("in"))
+# plot legend separately for now
+plot_legend <- mycgifun(mycgi[[1]]) %>% 
+  ggplot(aes(xval,yval,fill=factor(year))) +
+  geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.1)
+legend <- cowplot::get_legend(plot_legend)
+grid::grid.newpage()
+grid::grid.draw(legend)
+# plot GIC by year
+ggsave(filename = "figures/AK/AK_BTS/GIC.pdf",
+       plot = arrangeGrob(grobs = gic_plots, ncol = 4, bottom = "Year",
+                          left = grid::textGrob("Global index of colocation", rot = 90, vjust = 0.2)),
+       width = 9, height = 7, units = c("in"))
+
+# COG timeseries plots from model output
+ggsave(filename = "figures/AK/AK_BTS/COG_model_est_N.pdf",
+       plot = arrangeGrob(grobs = COG_plots_N, ncol = 2, bottom = "year",
+                          left = grid::textGrob("COG Northings (10s km)", rot = 90, vjust = 0.2)),
+       width = 12, height = 8, units = c("in"))
+ggsave(filename = "figures/AK/AK_BTS/COG_model_est_E.pdf",
+       plot = arrangeGrob(grobs = COG_plots_E, ncol = 2, bottom = "year",
+                          left = grid::textGrob("COG Eastings (10s km)", rot = 90, vjust = 0.2)),
+       width = 12, height = 8, units = c("in"))
+
+# plot of predictions from full model (all fixed + random effects)
+ggsave(filename = "figures/AK/AK_BTS/predicted_density_maps.pdf",
+       plot = marrangeGrob(prediction_plots, nrow = 1, ncol = 1),
+       width = 7, height = 9, units = c("in"))
+
+# plot only spatiotemporal random effects
+ggsave(filename = "plots/st_maps.pdf",
+       plot = marrangeGrob(spatiotemporal_plots, nrow = 1, ncol = 1),
+       width = 7, height = 9, units = c("in"))
+
+## model checking plots
+# anisotropy plots for each species
+ggsave(filename = "figures/AK/AK_BTS/anisotropy.pdf",
+       plot = arrangeGrob(grobs = anisotropy_plots, ncol = 5),
+       width = 12, height = 8, units = c("in"))
+# qq norm plots for each species
+pdf(file = "figures/AK/AK_BTS/qqnorm.pdf", width = 12, height = 12)
+par(mfrow=c(5,5))
+for(spp in 1:length(species)) {
+  plot(qq_plots[[spp]], pch = ".", main = paste0(species[spp],"_qq")); abline(a = 0, b = 1)
+}
+dev.off()
+# residuals maps
+ggsave(filename = "figures/AK/AK_BTS/residuals_maps.pdf",
+       plot = marrangeGrob(residuals_plots, nrow = 1, ncol = 1),
+       width = 7, height = 9, units = c("in"))
