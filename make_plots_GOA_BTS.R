@@ -19,13 +19,10 @@ qq_plots = list()
 residuals_plots = list()
 prediction_plots = list()
 spatiotemporal_plots = list()
-trend_plots = list()
-trend_cluster_plots = list()
 intercept_plots = list()
 intercept_cluster_plots = list()
 COG_plots_N = list()
 COG_plots_E = list()
-all_clust = NULL
 mycgi = list()
 mycgi_cross_plots = list()
 mycgi_ellipse_plots = list()
@@ -88,18 +85,79 @@ for(spp in 1:length(species)) {
     ggtitle(paste0(species[spp],"_COG_Inertia"))
   
   # global index of collocation, comparing all years to individual years
-  gic_plots[[spp]] <- p %>% 
-    group_by(year) %>% 
-    summarise(gic=gic(x1=X,
-                      y1=Y,
-                      z1=exp(est),
-                      x2=p$X, # These funky lines allow us to refer to all years of the data and not just the current group_by year
-                      y2=p$Y,
-                      z2=exp(p$est))) %>%
-    ggplot(aes(year,gic)) + 
-    geom_line() +
-    theme(axis.title=element_blank()) +
-    ggtitle(species[spp])
+  if(!(spp %in% c(9:12))){
+    gic_plots[[spp]] <- p %>% 
+      group_by(year) %>% 
+      summarise(gic=gic(x1=X,
+                        y1=Y,
+                        z1=exp(est),
+                        x2=p$X, 
+                        y2=p$Y,
+                        z2=exp(p$est))) %>%
+      ggplot(aes(year,gic)) + 
+      geom_line() +
+      theme(axis.title=element_blank(), axis.text.x = element_blank()) +
+      ggtitle(species[spp])
+  }
+  else{
+    gic_plots[[spp]] <- p %>% 
+      group_by(year) %>% 
+      summarise(gic=gic(x1=X,
+                        y1=Y,
+                        z1=exp(est),
+                        x2=p$X, # These funky lines allow us to refer to all years of the data and not just the current group_by year
+                        y2=p$Y,
+                        z2=exp(p$est))) %>%
+      ggplot(aes(year,gic)) + 
+      geom_line() +
+      theme(axis.title=element_blank()) +
+      scale_x_continuous(breaks=seq(1985, 2015, 10)) + 
+      ggtitle(species[spp])
+  }
+  
+  # make timeseries plots of COG and 95% CI from model estimates
+  p_All = predict(d, newdata=Predict_data_years, return_tmb_object = TRUE)  
+  COG = get_cog(p_All)
+  # add x axis labels and legend only to specific panels to be combined later
+  if(!(spp %in% c(9:12))){
+    COG_plots_N[[spp]] = ggplot(filter(COG, coord == "Y"), aes(year, est)) +
+      geom_ribbon(aes(ymin = lwr, ymax = upr), fill = "grey70") +
+      geom_line(color = "black") +
+      labs(title = species[spp], tag = LETTERS[spp]) +
+      theme(axis.title = element_blank(), title = element_text(size = rel(0.9)),
+            axis.text.x = element_blank(), plot.margin = unit(c(0,0,1,3), "pt"),
+            legend.position = "none")
+  }
+  else{
+    COG_plots_N[[spp]] = ggplot(filter(COG, coord == "Y"), aes(year, est)) +
+      geom_ribbon(aes(ymin = lwr, ymax = upr), fill = "grey70") +
+      geom_line(color = "black") +
+      labs(title = species[spp], tag = LETTERS[spp]) +
+      theme(axis.title = element_blank(), title = element_text(size = rel(0.9)),
+            plot.margin = unit(c(0,0,0,3), "pt"),
+            legend.position = "none") +
+      scale_x_continuous(breaks=seq(1985, 2015, 10))
+  }
+  
+  if(!(spp %in% c(9:12))){
+    COG_plots_E[[spp]] = ggplot(filter(COG, coord == "X"), aes(year, est)) +
+      geom_ribbon(aes(ymin = lwr, ymax = upr), fill = "grey70") +
+      geom_line(color = "black") +
+      labs(title = species[spp], tag = LETTERS[spp]) +
+      theme(axis.title = element_blank(), title = element_text(size = rel(0.9)),
+            axis.text.x = element_blank(), plot.margin = unit(c(0,0,1,3), "pt"),
+            legend.position = "none")
+  }
+  else{
+    COG_plots_E[[spp]] = ggplot(filter(COG, coord == "X"), aes(year, est)) +
+      geom_ribbon(aes(ymin = lwr, ymax = upr), fill = "grey70") +
+      geom_line(color = "black") +
+      labs(title = species[spp], tag = LETTERS[spp]) +
+      theme(axis.title = element_blank(), title = element_text(size = rel(0.9)),
+            plot.margin = unit(c(0,0,0,3), "pt"),
+            legend.position = "none") +
+      scale_x_continuous(breaks=seq(1985, 2015, 10))
+  }
   
 ## model checking
 # check anisotropy
@@ -179,11 +237,11 @@ ggsave(filename = "figures/AK/AK_BTS/GIC.pdf",
 
 # COG timeseries plots from model output
 ggsave(filename = "figures/AK/AK_BTS/COG_model_est_N.pdf",
-       plot = arrangeGrob(grobs = COG_plots_N, ncol = 2, bottom = "year",
+       plot = arrangeGrob(grobs = COG_plots_N, ncol = 4, bottom = "year",
                           left = grid::textGrob("COG Northings (10s km)", rot = 90, vjust = 0.2)),
        width = 12, height = 8, units = c("in"))
 ggsave(filename = "figures/AK/AK_BTS/COG_model_est_E.pdf",
-       plot = arrangeGrob(grobs = COG_plots_E, ncol = 2, bottom = "year",
+       plot = arrangeGrob(grobs = COG_plots_E, ncol = 4, bottom = "year",
                           left = grid::textGrob("COG Eastings (10s km)", rot = 90, vjust = 0.2)),
        width = 12, height = 8, units = c("in"))
 
@@ -193,18 +251,18 @@ ggsave(filename = "figures/AK/AK_BTS/predicted_density_maps.pdf",
        width = 7, height = 9, units = c("in"))
 
 # plot only spatiotemporal random effects
-ggsave(filename = "plots/st_maps.pdf",
+ggsave(filename = "figures/AK/AK_BTS/st_maps.pdf",
        plot = marrangeGrob(spatiotemporal_plots, nrow = 1, ncol = 1),
        width = 7, height = 9, units = c("in"))
 
 ## model checking plots
 # anisotropy plots for each species
 ggsave(filename = "figures/AK/AK_BTS/anisotropy.pdf",
-       plot = arrangeGrob(grobs = anisotropy_plots, ncol = 5),
+       plot = arrangeGrob(grobs = anisotropy_plots, ncol = 4),
        width = 12, height = 8, units = c("in"))
 # qq norm plots for each species
 pdf(file = "figures/AK/AK_BTS/qqnorm.pdf", width = 12, height = 12)
-par(mfrow=c(5,5))
+par(mfrow=c(3,4))
 for(spp in 1:length(species)) {
   plot(qq_plots[[spp]], pch = ".", main = paste0(species[spp],"_qq")); abline(a = 0, b = 1)
 }
