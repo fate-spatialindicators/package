@@ -53,6 +53,8 @@ data$Y <- data$latitude / 10000
 
 # fit same model structure to each species 
 for(spp in 1:length(species)) {
+  
+  # filter by species and only include range of coordinates with positive observations over the timeseries
   data_sub = data %>% dplyr::filter(common_name == species[spp]) %>% 
     dplyr::filter(latitude >= min(latitude[which(cpue>0)]),
                   latitude <= max(latitude[which(cpue>0)]),
@@ -112,18 +114,18 @@ saveRDS(Predict_data_years, file=paste0("data/AK/AK_BTS/GOA_predict_data.rds")) 
 # Make plots from predictions, model fit (you can wrap this in a loop to perform by species)
 
 # predict from model to full prediction domain (space and time)
-p = predict(density_model, newdata=Predict_data_years, se_fit = FALSE)
+#p = predict(density_model, newdata=Predict_data_years, se_fit = FALSE)
 
 # plotting functions
-plot_map_raster <- function(dat, column = "omega_s") {
-  ggplot(dat, aes_string("X", "Y", fill = column)) +
-    geom_raster() +
-    scale_fill_viridis_c() +
-    xlab("Longitude") +
-    ylab("Latitude")
-}
+#plot_map_raster <- function(dat, column = "omega_s") {
+#  ggplot(dat, aes_string("X", "Y", fill = column)) +
+#    geom_raster() +
+#    scale_fill_viridis_c() +
+#    xlab("Longitude") +
+#    ylab("Latitude")
+#}
 
 # make plot of predictions from full model (all fixed + random effects)
-plot_map_raster(p, "est") +
-  facet_wrap(~year) +
-  coord_fixed()
+#plot_map_raster(p, "est") +
+#  facet_wrap(~year) +
+#  coord_fixed()
