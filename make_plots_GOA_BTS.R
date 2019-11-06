@@ -232,7 +232,7 @@ dev.off()
 # plot GIC by year
 ggsave(filename = "figures/AK/AK_BTS/GIC.pdf",
        plot = arrangeGrob(grobs = gic_plots, ncol = 4, bottom = "Year",
-                          left = grid::textGrob("Global index of colocation", rot = 90, vjust = 0.2)),
+                          left = grid::textGrob("Global index of collocation", rot = 90, vjust = 0.2)),
        width = 9, height = 7, units = c("in"))
 
 # COG timeseries plots from model output
