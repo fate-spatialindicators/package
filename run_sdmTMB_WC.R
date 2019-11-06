@@ -75,14 +75,16 @@ for(spp in 1:length(species)) {
   
   # filter by species and only include range of coordinates with positive observations over the timeseries
   subset = dplyr::filter(catch, common_name == species[spp])
-  haul_new = dplyr::left_join(haul, subset) %>%
-    dplyr::filter(latitude >= min(latitude[which(cpue_kg_km2>0)]),
-                  latitude <= max(latitude[which(cpue_kg_km2>0)]),
-                  longitude >= min(longitude[which(cpue_kg_km2)]),
-                  longitude <= max(longitude[which(cpue_kg_km2>0)]))
+  haul_new = dplyr::left_join(haul, subset) 
+  # Set NA CPUEs to 0
+  haul_new$cpue_kg_km2[which(is.na(haul_new$cpue_kg_km2))] = 0
+  haul_new = dplyr::filter(haul_new, Latitude_dd >= min(Latitude_dd[which(cpue_kg_km2>0)]),
+                           Latitude_dd <= max(Latitude_dd[which(cpue_kg_km2>0)]),
+                           Longitude_dd >= min(Longitude_dd[which(cpue_kg_km2>0)]),
+                           Longitude_dd <= max(Longitude_dd[which(cpue_kg_km2>0)]))
   
-  # iterate fits over a range of number of knots,
   # using AUC and Tweedie predictive density to evaluate performance
+  # you can iterate fits over a range of number of knots by giving set of values rather than n_knots
   performance <- data.frame(
     knots = n_knots,
     auc = 0, tweedie_dens = 0
@@ -93,10 +95,10 @@ for(spp in 1:length(species)) {
     # sdmTMB_cv
     # create ids based on latitude quantiles
     haul_new$fold = 5
-    haul_new$fold[which(haul_new$lat < quantile(haul_new$lat,0.8))] = 4
-    haul_new$fold[which(haul_new$lat < quantile(haul_new$lat,0.6))] = 3
-    haul_new$fold[which(haul_new$lat < quantile(haul_new$lat,0.4))] = 2
-    haul_new$fold[which(haul_new$lat < quantile(haul_new$lat,0.2))] = 1
+    haul_new$fold[which(haul_new$Latitude_dd < quantile(haul_new$Latitude_dd,0.8))] = 4
+    haul_new$fold[which(haul_new$Latitude_dd < quantile(haul_new$Latitude_dd,0.6))] = 3
+    haul_new$fold[which(haul_new$Latitude_dd < quantile(haul_new$Latitude_dd,0.4))] = 2
+    haul_new$fold[which(haul_new$Latitude_dd < quantile(haul_new$Latitude_dd,0.2))] = 1
     
     # Set NA CPUEs to 0
     haul_new$cpue_kg_km2[which(is.na(haul_new$cpue_kg_km2))] = 0
@@ -107,21 +109,21 @@ for(spp in 1:length(species)) {
                                  n_knots = n_knots,
                                  time = "year", 
                                  anisotropy = TRUE,
-                                 family = tweedie(link = "log")
-                                 #control = sdmTMBcontrol(step.min = 0.01, step.max = 1)
+                                 family = tweedie(link = "log"),
+                                 control = sdmTMBcontrol(step.min = 0.01, step.max = 1)
                                  )
       
       if(!dir.exists(paste0("output/WC/",species[spp]))) dir.create(paste0("output/WC/",species[spp]))
       saveRDS(density_model, file=paste0("output/WC/",species[spp],"/",species[spp],"_",performance$knots[k],"_density.rds"))
     } else {
-      c_spde <- make_spde(haul_new$X, haul_new$Y, n_knots = performance$knots[k])
+      c_spde <- make_spde(haul_new$X, haul_new$Y, n_knots = n_knots)
       density_model <- sdmTMB(formula = cpue_kg_km2 ~ log_depth_scaled + log_depth_scaled2 + as.factor(year),
                               data = haul_new,
                               time = "year", 
                               spde = c_spde, 
                               anisotropy = TRUE,
-                              family = tweedie(link = "log")
-                              #control = sdmTMBcontrol(step.min = 0.01, step.max = 1)
+                              family = tweedie(link = "log"),
+                              control = sdmTMBcontrol(step.min = 0.01, step.max = 1)
                               )
       
       if(!dir.exists(paste0("output/WC/",species[spp]))) dir.create(paste0("output/WC/",species[spp]))
@@ -155,7 +157,7 @@ grid_cells <- spTransform(grid_cells, CRS(newproj))
 # make prediction raster roughly from grid_cell centroids, given standard cell dimensions (here in meters, converted from nm)
 predict_raster = raster(grid_cells, resolution = c(2778,3704), vals = NULL)
 ## load custom bathymetry raster
-bathy_hiRes <- raster("data/WC/WC_BTS/bathy_clipped")
+bathy_hiRes <- raster("data/WC/WC_BTS/shapefiles/bathy_clipped")
 bathy_hiRes <- bathy_hiRes / 10 # units were originally decimeters, so convert to meters
 # aggregate and project bathymetry to survey grid cells, the absolute minimum resolution of the prediction grid
 bathy_raster <- projectRaster(bathy_hiRes, predict_raster, crs = newproj, method="bilinear")
