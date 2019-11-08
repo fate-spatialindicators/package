@@ -22,29 +22,37 @@
 
 library(dplyr)
 library(sdmTMB)
+library(future)
+plan(multisession)
+# plan(sequential)
 
-spp <- c("Dover sole", "arrowtooth flounder", "rex sole",
-  "English sole","sablefish","Pacific cod", "north pacific spiny dogfish",
-  "longnose skate","big skate", "Pacific ocean perch", "pacific halibut") %>% 
+spp <- c(
+  "Dover sole", "arrowtooth flounder", "rex sole",
+  "English sole", "sablefish", "Pacific cod", "north pacific spiny dogfish",
+  "longnose skate", "big skate", "Pacific ocean perch", "pacific halibut"
+) %>%
   tolower()
 
-if (!file.exists("data/BC/bc-synoptic-tows.rds")) {
+.file <- "data/BC/bc-synoptic-tows.rds"
+if (!file.exists(.file)) {
   d <- list()
   for (i in seq_along(spp)) {
     .spp <- gsub(" ", "-", gsub("\\/", "-", tolower(spp[i])))
-    # d[[i]] <- gfdata::get_survey_sets(.spp, ssid = c(1, 3, 4, 16), join_sample_ids = TRUE)
-    d[[i]] <- readRDS(paste0("../../gfs/report/data-cache/", .spp, ".rds"))
-    d[[i]] <- d[[i]]$survey_sets
+    d[[i]] <- gfdata::get_survey_sets(.spp, ssid = c(1, 3, 4, 16), 
+      join_sample_ids = TRUE)
+    # d[[i]] <- readRDS(paste0("../../gfs/report/data-cache/", .spp, ".rds"))
+    # d[[i]] <- d[[i]]$survey_sets
   }
   d <- dplyr::bind_rows(d)
-  d <- dplyr::filter(d, survey_series_id %in% c(1, 3, 4, 16)) %>% 
-    select(year, species = species_common_name, longitude, latitude, depth_m, density_kgpm2)
-  saveRDS(d, file = "data/BC/bc-synoptic-tows.rds")
+  d <- dplyr::filter(d, survey_series_id %in% c(1, 3, 4, 16)) %>%
+    select(year, species = species_common_name, longitude, 
+      latitude, depth_m, density_kgpm2)
+  saveRDS(d, file = .file)
 } else {
-  d <- readRDS("data/BC/bc-synoptic-tows.rds")
+  d <- readRDS(.file)
 }
 
-syn_grid <- gfplot::synoptic_grid %>% 
+syn_grid <- gfplot::synoptic_grid %>% # utm 9
   select(-cell_area, -survey_domain_year)
 saveRDS(syn_grid, file = "data/BC/bc-synoptic-grids.rds")
 
@@ -58,8 +66,10 @@ dat <- convert2utm(d)
 
 expand_years <- function(grid, tow_dat) {
   original_time <- sort(unique(tow_dat$year))
-  nd <- do.call("rbind",
-    replicate(length(original_time), grid, simplify = FALSE))
+  nd <- do.call(
+    "rbind",
+    replicate(length(original_time), grid, simplify = FALSE)
+  )
   nd[["year"]] <- rep(original_time, each = nrow(grid))
   nd
 }
@@ -75,29 +85,38 @@ scale_dat <- function(grid, tow_dat) {
   list(grid = grid, tow_dat = tow_dat)
 }
 
-fit_bc_survey <- function(.survey, .species, knots = 300L) {
-  sp_dat <- filter(dat, species == .species) %>% 
+fit_bc_survey <- function(.survey, .species, knots = 300L, silent = TRUE) {
+  sp_dat <- filter(dat, species == .species) %>%
     mutate(density_kgp100m2 = density_kgpm2 * 100 * 100) # computational stability?
-  survey_grid <- filter(syn_grid, survey  == .survey) %>% 
-    expand_years(tow_dat) %>% 
+  survey_grid <- filter(syn_grid, survey == .survey) %>%
+    expand_years(dat) %>%
     select(year, X, Y, depth)
-  scaled <- scale_dat(grid = survey_grid, tow_dat = sp_dat)
-  sp_dat <- scaled$tow_dat
-  survey_grid <- scaled$grid
-
-  spde <- make_spde(sp_dat$X, sp_dat$Y, n_knots = knots)
-  density_model <- sdmTMB(
-    formula = density_kgpm2 ~ 0 + as.factor(year),
-    time_varying = ~ 0 + log_depth_scaled + log_depth_scaled2,
-    data = sp_dat,
-    time = "year", 
-    spde = spde,
-    reml = TRUE,
-    anisotropy = TRUE,
-    family = tweedie(link = "log"),
-    silent = FALSE
-  )
+  if (nrow(sp_dat) > 1L) {
+    scaled <- scale_dat(grid = survey_grid, tow_dat = sp_dat)
+    sp_dat <- scaled$tow_dat
+    survey_grid <- scaled$grid
+    spde <- make_spde(sp_dat$X, sp_dat$Y, n_knots = knots)
+    density_model <- tryCatch(sdmTMB(
+      formula = density_kgpm2 ~ 0 + as.factor(year),
+      time_varying = ~ 0 + log_depth_scaled + log_depth_scaled2,
+      data = sp_dat,
+      time = "year",
+      spde = spde,
+      reml = TRUE,
+      anisotropy = TRUE,
+      family = tweedie(link = "log"),
+      silent = silent
+    ), error = function(e) NA)
+  } else {
+    density_model <- NA
+  }
   list(model = density_model, grid = survey_grid, tow_dat = sp_dat)
 }
+# m <- fit_bc_survey("SYN QCS", "pacific cod", silent = FALSE)
 
-m <- fit_bc_survey("SYN QCS", "pacific cod")
+to_fit <- tidyr::expand_grid(
+  .survey = unique(syn_grid$survey), 
+  .species = unique(dat$species)
+)
+# go-go-gadget 16 cores:
+bc_fits <- furrr::future_pmap(to_fit, fit_bc_survey)
