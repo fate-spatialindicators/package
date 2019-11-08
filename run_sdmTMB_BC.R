@@ -1,0 +1,103 @@
+# Notes from Lewis:
+#
+# The first step would be to fit spatiotemporal models to the BC trawl survey
+# data for these species: "Dover sole", "arrowtooth flounder", "rex sole",
+# "English sole","sablefish","Pacific cod", "spiny dogfish","longnose
+# skate","big skate", "Pacific ocean perch" (along with P halibut if observed
+# often enough; I am assuming you guys don't get enough pollock to include
+# them).  As for the modeling approach, I started by just fitting models to the
+# survey data with only depth, depth^2 and year as fixed effects, as shown in
+# this stripped-down script I made to help Scott get started fitting models to
+# the NE data (see lines 69-73 for arguments to sdmTMB):
+# https://github.com/fate-spatialindicators/spatialindicators/blob/master/run_sdmTMB_GOA.R
+#
+# The second step would be to use the predictions from the above models to make
+# plots of COG and inertia in a similar way as Jordan did for the commercial
+# data.  See some notes on this in the messages below, but I can link to some
+# cleaned up plotting code on github. We should
+# also extract the COG estimates directly from sdmTMB for comparison.
+#
+# Lastly, if it is not too much work, computing the same indicators on the
+# commercial data for the same set of species would be great.
+
+library(dplyr)
+library(sdmTMB)
+
+spp <- c("Dover sole", "arrowtooth flounder", "rex sole",
+  "English sole","sablefish","Pacific cod", "north pacific spiny dogfish",
+  "longnose skate","big skate", "Pacific ocean perch", "pacific halibut") %>% 
+  tolower()
+
+if (!file.exists("data/BC/bc-synoptic-tows.rds")) {
+  d <- list()
+  for (i in seq_along(spp)) {
+    .spp <- gsub(" ", "-", gsub("\\/", "-", tolower(spp[i])))
+    # d[[i]] <- gfdata::get_survey_sets(.spp, ssid = c(1, 3, 4, 16), join_sample_ids = TRUE)
+    d[[i]] <- readRDS(paste0("../../gfs/report/data-cache/", .spp, ".rds"))
+    d[[i]] <- d[[i]]$survey_sets
+  }
+  d <- dplyr::bind_rows(d)
+  d <- dplyr::filter(d, survey_series_id %in% c(1, 3, 4, 16)) %>% 
+    select(year, species = species_common_name, longitude, latitude, depth_m, density_kgpm2)
+  saveRDS(d, file = "data/BC/bc-synoptic-tows.rds")
+} else {
+  d <- readRDS("data/BC/bc-synoptic-tows.rds")
+}
+
+syn_grid <- gfplot::synoptic_grid %>% 
+  select(-cell_area, -survey_domain_year)
+saveRDS(syn_grid, file = "data/BC/bc-synoptic-grids.rds")
+
+convert2utm <- function(x, utm_zone = 9) {
+  x <- dplyr::rename(x, X = longitude, Y = latitude)
+  attr(x, "projection") <- "LL"
+  attr(x, "zone") <- utm_zone
+  suppressMessages(PBSmapping::convUL(x))
+}
+dat <- convert2utm(d)
+
+expand_years <- function(grid, tow_dat) {
+  original_time <- sort(unique(tow_dat$year))
+  nd <- do.call("rbind",
+    replicate(length(original_time), grid, simplify = FALSE))
+  nd[["year"]] <- rep(original_time, each = nrow(grid))
+  nd
+}
+
+scale_dat <- function(grid, tow_dat) {
+  tow_dat <- dplyr::filter(tow_dat, !is.na(depth_m))
+  .mean <- mean(log(tow_dat$depth_m), na.rm = TRUE)
+  .sd <- sd(log(tow_dat$depth_m), na.rm = TRUE)
+  grid$log_depth_scaled <- (log(grid$depth) - .mean) / .sd
+  tow_dat$log_depth_scaled <- (log(tow_dat$depth_m) - .mean) / .sd
+  grid$log_depth_scaled2 <- grid$log_depth_scaled^2
+  tow_dat$log_depth_scaled2 <- tow_dat$log_depth_scaled^2
+  list(grid = grid, tow_dat = tow_dat)
+}
+
+fit_bc_survey <- function(.survey, .species, knots = 300L) {
+  sp_dat <- filter(dat, species == .species) %>% 
+    mutate(density_kgp100m2 = density_kgpm2 * 100 * 100) # computational stability?
+  survey_grid <- filter(syn_grid, survey  == .survey) %>% 
+    expand_years(tow_dat) %>% 
+    select(year, X, Y, depth)
+  scaled <- scale_dat(grid = survey_grid, tow_dat = sp_dat)
+  sp_dat <- scaled$tow_dat
+  survey_grid <- scaled$grid
+
+  spde <- make_spde(sp_dat$X, sp_dat$Y, n_knots = knots)
+  density_model <- sdmTMB(
+    formula = density_kgpm2 ~ 0 + as.factor(year),
+    time_varying = ~ 0 + log_depth_scaled + log_depth_scaled2,
+    data = sp_dat,
+    time = "year", 
+    spde = spde,
+    reml = TRUE,
+    anisotropy = TRUE,
+    family = tweedie(link = "log"),
+    silent = FALSE
+  )
+  list(model = density_model, grid = survey_grid, tow_dat = sp_dat)
+}
+
+m <- fit_bc_survey("SYN QCS", "pacific cod")
