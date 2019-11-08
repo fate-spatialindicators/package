@@ -120,3 +120,6 @@ to_fit <- tidyr::expand_grid(
 )
 # go-go-gadget 16 cores:
 bc_fits <- furrr::future_pmap(to_fit, fit_bc_survey)
+
+dir.create("data/BC/generated/", showWarnings = FALSE)
+saveRDS(bc_fits, file = "data/BC/generated/bc-survey-fits.rds")
