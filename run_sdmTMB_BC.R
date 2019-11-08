@@ -23,8 +23,11 @@
 library(dplyr)
 library(sdmTMB)
 library(future)
-plan(multisession)
+
+plan(multisession, workers = floor(availableCores() / 2))
 # plan(sequential)
+dir.create("data/BC/", showWarnings = FALSE)
+dir.create("data/BC/generated/", showWarnings = FALSE)
 
 spp <- c(
   "Dover sole", "arrowtooth flounder", "rex sole",
@@ -112,14 +115,29 @@ fit_bc_survey <- function(.survey, .species, knots = 300L, silent = TRUE) {
   }
   list(model = density_model, grid = survey_grid, tow_dat = sp_dat)
 }
-# m <- fit_bc_survey("SYN QCS", "pacific cod", silent = FALSE)
 
 to_fit <- tidyr::expand_grid(
   .survey = unique(syn_grid$survey), 
   .species = unique(dat$species)
 )
-# go-go-gadget 16 cores:
-bc_fits <- furrr::future_pmap(to_fit, fit_bc_survey)
 
-dir.create("data/BC/generated/", showWarnings = FALSE)
-saveRDS(bc_fits, file = "data/BC/generated/bc-survey-fits.rds")
+.f <- "data/BC/generated/bc-survey-fits.rds"
+if (!file.exists(.f)) {
+  bc_fits <- furrr::future_pmap(to_fit, fit_bc_survey)
+  saveRDS(bc_fits, file = .f)
+} else {
+  bc_fits <- readRDS(.f)
+}
+
+.f1 <- "data/BC/generated/bc-survey-predictions.rds"
+.f2 <- "data/BC/generated/bc-survey-cogs.rds"
+if (!file.exists(.f1) || !file.exists(.f2)) {
+  predictions <- furrr::future_map(bc_fits,
+    ~predict(.x$model, newdata = .x$grid, return_tmb_object = TRUE))
+  saveRDS(predictions, file = .f1)
+  cogs <- furrr::future_map(predictions, ~get_cog(.x, bias_correct = FALSE))
+  saveRDS(cogs, file = .f2)
+} else {
+  bc_fits <- readRDS(.f)
+}
+
