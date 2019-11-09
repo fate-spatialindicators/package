@@ -42,15 +42,17 @@ if (!file.exists(.file)) {
   d <- list()
   for (i in seq_along(spp)) {
     .spp <- gsub(" ", "-", gsub("\\/", "-", tolower(spp[i])))
-    # d[[i]] <- gfdata::get_survey_sets(.spp, ssid = c(1, 3, 4, 16), 
+    # d[[i]] <- gfdata::get_survey_sets(.spp, ssid = c(1, 3, 4, 16),
     #   join_sample_ids = TRUE)
     d[[i]] <- readRDS(paste0("../../gfs/report/data-cache/", .spp, ".rds"))
     d[[i]] <- d[[i]]$survey_sets
   }
   d <- dplyr::bind_rows(d)
   d <- dplyr::filter(d, survey_series_id %in% c(1, 3, 4, 16)) %>%
-    select(year, survey = survey_abbrev, species = species_common_name, longitude, 
-      latitude, depth_m, density_kgpm2)
+    select(year,
+      survey = survey_abbrev, species = species_common_name, longitude,
+      latitude, depth_m, density_kgpm2
+    )
   saveRDS(d, file = .file)
 } else {
   d <- readRDS(.file)
@@ -118,7 +120,7 @@ fit_bc_survey <- function(.survey, .species, knots = 250L, silent = TRUE) {
 }
 
 to_fit <- tidyr::expand_grid(
-  .survey = unique(syn_grid$survey), 
+  .survey = unique(syn_grid$survey),
   .species = unique(dat$species)
 )
 
@@ -134,8 +136,9 @@ if (!file.exists(.f)) {
 .f2 <- "data/BC/generated/bc-survey-cogs2.rds"
 if (!file.exists(.f1) || !file.exists(.f2)) {
   predictions <- furrr::future_map(bc_fits, function(.x) {
-    tryCatch(predict(.x$model, newdata = .x$grid, return_tmb_object = TRUE), 
-      error = function(e) NA)
+    tryCatch(predict(.x$model, newdata = .x$grid, return_tmb_object = TRUE),
+      error = function(e) NA
+    )
   })
   saveRDS(predictions, file = .f1)
   cogs <- furrr::future_map(predictions, function(.x) {
@@ -149,39 +152,52 @@ if (!file.exists(.f1) || !file.exists(.f2)) {
 
 prediction_df <- purrr::map_df(seq_len(nrow(to_fit)), function(i) {
   .dat <- if (!is.na(predictions[[i]])[[1]]) predictions[[i]]$data else NA
-  data.frame(survey = to_fit$.survey[i], species = to_fit$.species[i], .dat,
-    stringsAsFactors = FALSE)
-}) %>% 
+  data.frame(
+    survey = to_fit$.survey[i], species = to_fit$.species[i], .dat,
+    stringsAsFactors = FALSE
+  )
+}) %>%
   select(-.dat, -zeta_s, -est_rf, -log_depth_scaled2, -log_depth_scaled, -density_kgpm2)
 saveRDS(prediction_df, file = "data/BC/generated/bc-survey-predictions2-df.rds")
 
-cogs_df <- purrr::map_df(seq_len(nrow(to_fit)), ~data.frame(
-  survey = to_fit$.survey[.x], 
-  species = to_fit$.species[.x], 
-  cogs[[.x]], stringsAsFactors = FALSE)) %>% 
-  as_tibble() %>% 
+cogs_df <- purrr::map_df(seq_len(nrow(to_fit)), ~ data.frame(
+  survey = to_fit$.survey[.x],
+  species = to_fit$.species[.x],
+  cogs[[.x]], stringsAsFactors = FALSE
+)) %>%
+  as_tibble() %>%
   select(-`cogs...x..`)
 
 stopifnot(nrow(filter(cogs_df, is.na(est))) == 0)
 
-g <- ggplot(filter(cogs_df, coord == "X")) + 
+g <- ggplot(filter(cogs_df, coord == "X")) +
   geom_ribbon(aes(x = year, ymin = lwr, ymax = upr), alpha = 0.4) +
-  geom_line(aes(x = year, y = est)) + 
+  geom_line(aes(x = year, y = est)) +
   facet_grid(cols = vars(species), rows = vars(survey), scales = "free_y") +
   ggsidekick::theme_sleek()
 ggsave("figures/BC/cog-surveys-X.pdf", width = 20, height = 8)
 
-g <- ggplot(filter(cogs_df, coord == "Y")) + 
+g <- ggplot(filter(cogs_df, coord == "Y")) +
   geom_ribbon(aes(x = year, ymin = lwr, ymax = upr), alpha = 0.4) +
-  geom_line(aes(x = year, y = est)) + 
+  geom_line(aes(x = year, y = est)) +
   facet_grid(cols = vars(species), rows = vars(survey), scales = "free_y") +
   ggsidekick::theme_sleek()
 ggsave("figures/BC/cog-surveys-Y.pdf", width = 20, height = 8)
 
-cogs_wide <- reshape2::dcast(cogs_df, survey + species + year ~ coord, value.var = "est")
-g <- ggplot(cogs_wide, aes(X, Y)) + geom_path(aes(color = year), alpha = 0.3) +
-  geom_point(aes(color = year)) +
-  facet_wrap(survey~species, ncol = 11, scales = "free") +
+cogs_wide_est <- reshape2::dcast(cogs_df, survey + species + year ~ coord, value.var = "est")
+cogs_wide_lwr <- reshape2::dcast(cogs_df, survey + species + year ~ coord, value.var = "lwr") %>%
+  mutate(X_lwr = X, Y_lwr = Y)
+cogs_wide_upr <- reshape2::dcast(cogs_df, survey + species + year ~ coord, value.var = "upr") %>%
+  mutate(X_upr = X, Y_upr = Y)
+cogs_wide <- cogs_wide_est %>% 
+  left_join(select(cogs_wide_lwr, survey, species, year, X_lwr, Y_lwr)) %>%
+  left_join(select(cogs_wide_upr, survey, species, year, X_upr, Y_upr))
+
+g <- ggplot(cogs_wide, aes(X, Y, color = year)) + geom_path(alpha = 0.3) +
+  geom_point() +
+  geom_segment(aes(x = X_lwr, xend = X_upr, y = Y, yend = Y), lwd = 0.2) +
+  geom_segment(aes(x = X, xend = X, y = Y_lwr, yend = Y_upr), lwd = 0.2) +
+  facet_wrap(survey ~ species, ncol = 11, scales = "free") +
   scale_color_viridis_c() +
   ggsidekick::theme_sleek()
 ggsave("figures/BC/cog-surveys-XY.pdf", width = 19, height = 8)
