@@ -193,7 +193,7 @@ cogs_wide <- cogs_wide_est %>%
   left_join(select(cogs_wide_lwr, survey, species, year, X_lwr, Y_lwr)) %>%
   left_join(select(cogs_wide_upr, survey, species, year, X_upr, Y_upr))
 
-g <- ggplot(cogs_wide, aes(X, Y, color = year)) + geom_path(alpha = 0.3) +
+g <- ggplot(cogs_wide, aes(X, Y, color = year)) + geom_path(alpha = 0.7) +
   geom_point() +
   geom_segment(aes(x = X_lwr, xend = X_upr, y = Y, yend = Y), lwd = 0.2) +
   geom_segment(aes(x = X, xend = X, y = Y_lwr, yend = Y_upr), lwd = 0.2) +
@@ -201,3 +201,14 @@ g <- ggplot(cogs_wide, aes(X, Y, color = year)) + geom_path(alpha = 0.3) +
   scale_color_viridis_c() +
   ggsidekick::theme_sleek()
 ggsave("figures/BC/cog-surveys-XY.pdf", width = 19, height = 8)
+
+cogs_wide <- mutate(cogs_wide, diameter_x = X_upr - X_lwr, diameter_y = Y_upr - Y_lwr)
+g <- ggplot(cogs_wide, aes(X, Y, color = year, fill = year)) + 
+  geom_path() +
+  ggforce::geom_ellipse(aes(x0 = X, y0 = Y, a = diameter_x/2, b = diameter_y/2, angle = 0), alpha = 0.1) +
+  geom_point() +
+  facet_wrap(survey ~ species, ncol = 11, scales = "free") +
+  scale_color_viridis_c(option = "C") +
+  scale_fill_viridis_c(option = "C") +
+  ggsidekick::theme_sleek()
+ggsave("figures/BC/cog-surveys-XY-ellipse.pdf", width = 19, height = 8)
