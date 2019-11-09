@@ -23,6 +23,7 @@
 library(dplyr)
 library(sdmTMB)
 library(future)
+library(ggplot2)
 
 plan(multisession, workers = floor(availableCores() / 2))
 # plan(sequential)
@@ -163,28 +164,24 @@ cogs_df <- purrr::map_df(seq_len(nrow(to_fit)), ~data.frame(
 
 stopifnot(nrow(filter(cogs_df, is.na(est))) == 0)
 
-library(ggplot2)
-ggplot(filter(cogs_df, coord == "X")) + 
+g <- ggplot(filter(cogs_df, coord == "X")) + 
   geom_ribbon(aes(x = year, ymin = lwr, ymax = upr), alpha = 0.4) +
   geom_line(aes(x = year, y = est)) + 
-  facet_grid(cols = vars(species), rows = vars(survey), scales = "free_y")
-ggsave("figures/BC/cog-surveys-X.pdf", width = 15, height = 8)
+  facet_grid(cols = vars(species), rows = vars(survey), scales = "free_y") +
+  ggsidekick::theme_sleek()
+ggsave("figures/BC/cog-surveys-X.pdf", width = 20, height = 8)
 
-ggplot(filter(cogs_df, coord == "Y")) + 
+g <- ggplot(filter(cogs_df, coord == "Y")) + 
   geom_ribbon(aes(x = year, ymin = lwr, ymax = upr), alpha = 0.4) +
   geom_line(aes(x = year, y = est)) + 
-  facet_grid(cols = vars(species), rows = vars(survey), scales = "free_y")
-ggsave("figures/BC/cog-surveys-Y.pdf", width = 15, height = 8)
-
-ggplot(filter(cogs_df, coord == "Y")) + 
-  geom_ribbon(aes(x = year, ymin = lwr, ymax = upr), alpha = 0.4) +
-  geom_line(aes(x = year, y = est)) + 
-  facet_grid(cols = vars(species), rows = vars(survey), scales = "free_y")
+  facet_grid(cols = vars(species), rows = vars(survey), scales = "free_y") +
+  ggsidekick::theme_sleek()
+ggsave("figures/BC/cog-surveys-Y.pdf", width = 20, height = 8)
 
 cogs_wide <- reshape2::dcast(cogs_df, survey + species + year ~ coord, value.var = "est")
-
-ggplot(cogs_wide, aes(X, Y)) + geom_path(aes(color = year), alpha = 0.3) +
+g <- ggplot(cogs_wide, aes(X, Y)) + geom_path(aes(color = year), alpha = 0.3) +
   geom_point(aes(color = year)) +
   facet_wrap(survey~species, ncol = 11, scales = "free") +
-  scale_color_viridis_c()
+  scale_color_viridis_c() +
+  ggsidekick::theme_sleek()
 ggsave("figures/BC/cog-surveys-XY.pdf", width = 19, height = 8)
