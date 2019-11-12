@@ -53,6 +53,8 @@ g <- all_data %>%
   mutate(survey = forcats::fct_relevel(survey, survey_order)) %>%
   ggplot(aes(xval, yval, fill = year, color = year, group = as.factor(year))) +
   ggforce::geom_mark_ellipse(expand = unit(0, "mm"), alpha = 0.1) +
+  scale_y_continuous(expand = expand_scale(mult = .15)) +
+  scale_x_continuous(expand = expand_scale(mult = .15)) +
   facet_wrap(survey ~ species, ncol = 11, scales = "free") +
   scale_fill_viridis_c() +
   scale_colour_viridis_c() +
