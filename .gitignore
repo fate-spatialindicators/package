@@ -4,3 +4,7 @@
 .Ruserdata
 output/*
 run_sdmTMB_GOA_meshExperiment.R
+*.pdf
+*.png
+*.rds
+*.rda
