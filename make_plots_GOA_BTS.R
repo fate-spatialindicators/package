@@ -10,9 +10,9 @@ library(ggforce) # for plotting ellipses
 
 Predict_data_years = readRDS("data/AK/AK_BTS/GOA_predict_data.rds") # save prediction grid
 
-species = c("Dover sole","arrowtooth flounder", "Pacific halibut",
+species = sort(c("Dover sole","arrowtooth flounder", "Pacific halibut",
             "walleye pollock", "rex sole", "English sole","sablefish","Pacific cod",
-            "spiny dogfish","longnose skate","big skate", "Pacific ocean perch")
+            "spiny dogfish","longnose skate","big skate", "Pacific ocean perch"))
 
 anisotropy_plots = list()
 qq_plots = list()
@@ -67,9 +67,10 @@ for(spp in 1:length(species)) {
     data.frame
   
   mycgi_ellipse_plots[[spp]] <- mycgifun(mycgi[[spp]]) %>% 
-    ggplot(aes(xval,yval,fill=factor(year))) +
+    ggplot(aes(xval,yval,fill=factor(year),color=factor(year))) +
     geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.1) +
     scale_y_continuous(expand = expand_scale(mult = .15)) +
+    scale_x_continuous(expand = expand_scale(mult = .15)) +
     theme_bw() + 
     theme(legend.position = "none", axis.title=element_blank()) +
     ggtitle(species[spp])
@@ -172,11 +173,11 @@ qq_plots[[spp]] = qqnorm(data$residuals)
 residuals_plots[[spp]] = plot_map_point(data, "residuals") + facet_wrap(~year) + geom_point(size=0.05, alpha=0.1) +
   coord_fixed() + scale_color_gradient2() + ggtitle(species[spp])
 # check convergence
-sd = as.data.frame(summary(TMB::sdreport(d$tmb_obj)))
-sink(file = "output/AK/sdreport.txt", append = TRUE)
-print(species[spp])
-print(d$sd_report)
-sink()
+#sd = as.data.frame(summary(TMB::sdreport(d$tmb_obj)))
+#sink(file = "output/AK/sdreport.txt", append = TRUE)
+#print(species[spp])
+#print(d$sd_report)
+#sink()
 # check whether AR1 assumption is supported in models where fields are not IID, printing estimate and 95%CI for AR1 param
 #print("AR1 estimate")
 #print(sd$Estimate[row.names(sd) == "ar1_phi"])
@@ -223,7 +224,7 @@ ggsave(filename = "figures/AK/AK_BTS/ellipses.pdf",
 # plot legend separately for now
 pdf(file = "figures/AK/AK_BTS/ellipses_legend.pdf", width = 1, height = 4)
 plot_legend <- mycgifun(mycgi[[1]]) %>% 
-  ggplot(aes(xval,yval,fill=factor(year))) +
+  ggplot(aes(xval,yval,fill=factor(year), color = factor(year))) +
   geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.1)
 legend <- cowplot::get_legend(plot_legend)
 grid::grid.newpage()
