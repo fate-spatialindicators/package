@@ -23,7 +23,7 @@ species = c("Dover sole","arrowtooth flounder", "Pacific halibut",
 # Prepare data and fit models
 
 # Load combined catch and haul data 
-data <- readRDS(paste0(here::here(),"/data/AK/AK_BTS/AK_BTS.rds"))
+data <- readRDS("data/AK/AK_BTS/AK_BTS.rds")
 
 # filter to GOA survey, remove tows with 0 bottom depth, and drop 2001 year when survey was incomplete
 data <- data %>% filter(SURVEY == "GOA", BOTTOM_DEPTH > 0, YEAR != 2001)
