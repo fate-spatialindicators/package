@@ -2,9 +2,10 @@
 .Rhistory
 .RData
 .Ruserdata
-output/*
-run_sdmTMB_GOA_meshExperiment.R
+output/
+extras/
 *.pdf
 *.png
 *.rds
 *.rda
+
