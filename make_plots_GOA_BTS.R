@@ -58,6 +58,9 @@ mycgifun <- function(mycgi){
 # loop over species
 for(spp in 1:length(species)) {
   d = readRDS(paste0("output/AK/", species[spp],"_density.rds"))
+  # below 2 lines necessary for models fit with older sdmTMB versions
+  #d$tmb_data$weights_i = rep(1, length(d$tmb_data$y_i))
+  #d$tmb_data$calc_quadratic_range = as.integer(FALSE)
   p = predict(d, newdata=Predict_data_years)
   
   # calculate COGs and inertia in 2 dimensions
