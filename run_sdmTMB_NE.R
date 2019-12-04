@@ -16,13 +16,13 @@ setMKLthreads(parallel::detectCores(logical = FALSE) - 1)
 # options 
 
 # specify # of knots for mesh
-n_knots = 500
+n_knots = 750
 unit_scale = 10000
 # specify species to model
 species = c("smooth_dogfish","spiny_dogfish", "winter_skate",
             "summer_flounder", "atlantic_cod", "american_plaice",
             "red_hake","silver_hake", "haddock",
-            "cusk", "str_sea_bass", "sea_raven")
+            "cusk", "str_sea_bass", "sea_raven")[c(1,4,5)]
 
 ###########################################################################################################
 # Prepare data and fit models
@@ -53,7 +53,8 @@ data <- readRDS("data/NE/NE_BTS/NE_BTS.rds") %>%
 # project to UTM
 coordinates(data) <- c("LONGITUDE", "LATITUDE")
 proj4string(data) <- sp::CRS("+proj=longlat +datum=WGS84")
-wg_crs <- sp::CRS("+proj=aea +lat_1=36 +lat_2=44 +lat_0=40 +lon_0=-71.5 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+# Geospatial calculations are executed under the North America Albers Equal Area Conic projection (SRID: 102008).
+wg_crs <- sp::CRS("+proj=aea +lat_1=20 +lat_2=60 +lat_0=40 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs ")
 data <- as.data.frame(sp::spTransform(data, wg_crs))
 
 colnames(data) = tolower(colnames(data))
@@ -113,7 +114,7 @@ for(spp in 1:length(species)) {
       mutate(biomass = ifelse(is.na(biomass),
                               0,
                               biomass),
-             ABUNDANCE = ifelse(is.na(abundance) | biomass == 0,
+             abundance = ifelse(is.na(abundance) | biomass == 0,
                                 0,
                                 abundance),
              present = ifelse(abundance == 0,
@@ -121,9 +122,9 @@ for(spp in 1:length(species)) {
                               1),
              ## Successful tows were for 30 min at a speed of 3.5 knots before 2009 and 20 min at a speed of 3.0 knots since 2009,
              ## with area swept changing from 0.038 to 0.024 km2 (Politis et al., 2014; ASMFC, 2015; Li et al., 2018).
-             density = case_when(biomass == 0 ~ 0,
-                                 biomass != 0 & year >= 2009 ~ biomass/(0.024),
-                                 biomass != 0 & year < 2009 ~ biomass/(0.038),
+             density = case_when(abundance == 0 ~ 0,
+                                 abundance != 0 & year >= 2009 ~ abundance/(0.024),
+                                 abundance != 0 & year < 2009 ~ abundance/(0.038),
                                  TRUE ~ NA_real_),
              log_depth_scaled = scale(log(depth), scale = TRUE, center = TRUE),
              log_depth_scaled2 = log_depth_scaled^2)
@@ -170,7 +171,7 @@ for(spp in 1:length(species)) {
     c_spde <- make_spde(data_sub$X, data_sub$Y, n_knots = n_knots) 
     # plot_spde(c_spde)
 
-    start_time <- Sys.time()
+    # start_time <- Sys.time()
     density_model <- sdmTMB(formula = density ~ log_depth_scaled + log_depth_scaled2 + as.factor(year),
                             data = data_sub,
                             time = "year", 
@@ -179,20 +180,20 @@ for(spp in 1:length(species)) {
                             silent = FALSE,
                             family = tweedie(link = "log"),
                             control = sdmTMBcontrol(step.min = 0.01, step.max = 1))
-    end_time <- Sys.time()
+    # end_time <- Sys.time()
 
     saveRDS(density_model, 
             file = sprintf("output/NE/%s_%s_density.rds", species[spp], seasons[sea]))
-    
-    tt <- difftime(end_time, start_time)
-    time_difference <- sprintf("%s %s", round(tt[[1]], 0), attr(tt, "units"))
-    
-
-    glue::glue("Hi!
-                It looks like {tolower(seasons[sea])} {gsub('_', ' ', species[spp])} has finished
-                running and has been saved. This model took about
-                {time_difference} to run.
-                ")
+    # 
+    # tt <- difftime(end_time, start_time)
+    # time_difference <- sprintf("%s %s", round(tt[[1]], 0), attr(tt, "units"))
+    # 
+    # 
+    # glue::glue("Hi!
+    #             It looks like {tolower(seasons[sea])} {gsub('_', ' ', species[spp])} has finished
+    #             running and has been saved. This model took about
+    #             {time_difference} to run.
+    #             ")
 
   }
 }
@@ -214,14 +215,12 @@ nesbath <- marmap::getNOAA.bathy(lon1 = xlims[1], lon2 = xlims[2],
 
 neus_sp <- neus_grid %>%
   dplyr::mutate(z = raster::extract(nesbath, .) * -1) %>%
-  dplyr::filter(z > 0)
-
-neus_sp <- data.frame(neus_sp,
-                      longitude = neus_sp$x,
-                      latitude = neus_sp$y)
+  dplyr::filter(z > 0) %>% 
+  dplyr::rename(longitude = x,
+                latitude = y)
 # # project to UTM
 sp::coordinates(neus_sp) <- c("longitude", "latitude")
-sp::proj4string(neus_sp) <- wg_crs
+sp::proj4string(neus_sp) <- sp::CRS("+proj=longlat +datum=WGS84")
 neus_sp <- as.data.frame(sp::spTransform(neus_sp, wg_crs))
 
 # clip to NEFSC survey area
@@ -242,6 +241,13 @@ newdat <- neus_sp %>%
                 longitude,
                 latitude)
 
+saveRDS(newdat, file = paste0("data/NE/NE_BTS/predict_data.rds")) # save prediction grid
+
+# ggplot() +
+#   geom_point(data = newdat %>% filter(year %in% c(2000:2015)), aes(x = X, y = Y, color = depth)) +
+#   geom_point(data = data_spp %>% filter(year %in% c(2000:2015)), aes(x = X, y = Y), color = "white") +
+#   facet_wrap(~year)
+# 
 # 
 # newdat_kde <- newdat %>%
 #   sf::st_as_sf(coords = c("longitude", "latitude")) %>%
@@ -290,16 +296,16 @@ newdat <- neus_sp %>%
 # predict from model to full prediction domain (space and time)
 # p = predict(density_model, newdata = newdat, se_fit = FALSE)
 # 
-# # plotting functions
+# # # plotting functions
 # plot_map_raster <- function(dat, column = "omega_s") {
- # ggplot(p %>% filter(year == 2015), aes_string("X", "Y", color = "est")) +
- #   geom_point() +
- #   scale_color_viridis_c() +
- #   xlab("Longitude") +
- #   ylab("Latitude")
+# ggplot(p %>% filter(year %in% c(2000:2015)), aes_string("X", "Y", color = "est")) +
+#   geom_point() +
+#   scale_color_viridis_c() +
+#   xlab("Longitude") +
+#   ylab("Latitude")
 # }
-# 
-# # make plot of predictions from full model (all fixed + random effects)
+# # 
+# # # make plot of predictions from full model (all fixed + random effects)
 # plot_map_raster(p, "est") +
 #  facet_wrap(~year) +
 #  coord_fixed()
