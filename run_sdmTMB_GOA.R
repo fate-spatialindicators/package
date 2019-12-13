@@ -25,8 +25,8 @@ species = c("Dover sole","arrowtooth flounder", "Pacific halibut",
 # Load combined catch and haul data 
 data <- readRDS("data/AK/AK_BTS/AK_BTS.rds")
 
-# filter to GOA survey, remove tows with 0 bottom depth, and drop 2001 year when survey was incomplete
-data <- data %>% filter(SURVEY == "GOA", BOTTOM_DEPTH > 0, YEAR != 2001)
+# filter to GOA survey, remove tows with 0 bottom depth, and drop 2001 year when survey was incomplete, years before 1990 when a different net was used
+data <- data %>% filter(SURVEY == "GOA", BOTTOM_DEPTH > 0, YEAR != 2001 & YEAR > 1989)
 
 # read in the grid cell data from the survey design (one may choose to pre-specify which hauls are in which cells)
 #grid_cells = read.csv(paste0(here::here(),"/data/AK/AK_BTS/survey_grids/grid_GOA.csv"))
@@ -115,15 +115,6 @@ saveRDS(Predict_data_years, file=paste0("data/AK/AK_BTS/GOA_predict_data.rds")) 
 
 # predict from model to full prediction domain (space and time)
 #p = predict(density_model, newdata=Predict_data_years, se_fit = FALSE)
-
-# plotting functions
-#plot_map_raster <- function(dat, column = "omega_s") {
-#  ggplot(dat, aes_string("X", "Y", fill = column)) +
-#    geom_raster() +
-#    scale_fill_viridis_c() +
-#    xlab("Longitude") +
-#    ylab("Latitude")
-#}
 
 # make plot of predictions from full model (all fixed + random effects)
 #plot_map_raster(p, "est") +
