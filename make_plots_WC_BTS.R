@@ -93,8 +93,8 @@ for(spp in 1:length(species)) {
     facet_wrap(~year,ncol=4) + 
     geom_vline(xintercept = (mycgi[[spp]] %>% summarise(mean(xcg)))[[1]],linetype=2) + 
     geom_hline(yintercept = (mycgi[[spp]] %>% summarise(mean(ycg)))[[1]],linetype=2) +
-    xlab("Eastings (10s km)") +
-    ylab("Northings (10s km)") +
+    xlab("Eastings (km)") +
+    ylab("Northings (km)") +
     ggtitle(paste0(species[spp],"_COG_Inertia"))
   
   # global index of collocation, comparing all years to individual years
@@ -230,8 +230,8 @@ ggsave(filename = "figures/WC/WC_BTS/crosses.pdf",
        plot = marrangeGrob(grobs = mycgi_cross_plots, nrow = 1, ncol = 1),
        width = 7, height = 7, units = c("in"))
 ggsave(filename = "figures/WC/WC_BTS/ellipses.pdf",
-       plot = arrangeGrob(grobs = mycgi_ellipse_plots, ncol = 4, bottom = "Eastings (10s km)",
-                          left = grid::textGrob("Northings (10s km)", rot = 90, vjust = 0.2)),
+       plot = arrangeGrob(grobs = mycgi_ellipse_plots, ncol = 4, bottom = "Eastings (km)",
+                          left = grid::textGrob("Northings (km)", rot = 90, vjust = 0.2)),
        width = 7, height = 9, units = c("in"))
 # plot legend separately for now
 pdf(file = "figures/WC/WC_BTS/ellipses_legend.pdf", width = 1, height = 4.2)
@@ -251,11 +251,11 @@ ggsave(filename = "figures/WC/WC_BTS/GIC.pdf",
 # COG timeseries plots from model output
 ggsave(filename = "figures/WC/WC_BTS/COG_model_est_N.pdf",
        plot = arrangeGrob(grobs = COG_plots_N, ncol = 4, bottom = "Year",
-                          left = grid::textGrob("COG Northings (10s km)", rot = 90, vjust = 0.2)),
+                          left = grid::textGrob("COG Northings (km)", rot = 90, vjust = 0.2)),
        width = 12, height = 8, units = c("in"))
 ggsave(filename = "figures/WC/WC_BTS/COG_model_est_E.pdf",
        plot = arrangeGrob(grobs = COG_plots_E, ncol = 4, bottom = "Year",
-                          left = grid::textGrob("COG Eastings (10s km)", rot = 90, vjust = 0.2)),
+                          left = grid::textGrob("COG Eastings (km)", rot = 90, vjust = 0.2)),
        width = 12, height = 8, units = c("in"))
 
 # plot of predictions from full model (all fixed + random effects)

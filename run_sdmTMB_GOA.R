@@ -45,8 +45,9 @@ colnames(data) = tolower(colnames(data))
 #mesh = inla.mesh.2d(loc=Coord, boundary = bnd, max.edge=c(3000000,5000000), cutoff = 50000, offset=c(100000,100000))
 
 # rescale coordinates
-data$X <- data$longitude / 10000
-data$Y <- data$latitude / 10000
+unit_scale <- 1000
+data$X <- data$longitude / unit_scale
+data$Y <- data$latitude / unit_scale
 
 # center year (commented out since we are currently doing this internally in sdmTMB)
 # data$year_centered = data$year - mean(unique(data$year)) # set intercept to mean, or other value to roughly center year
@@ -95,8 +96,8 @@ Predict_data$BOTTOM_DEPTH <- ifelse(Predict_data$BOTTOM_DEPTH < min(data$bottom_
 # make prediction data frame with same covariates as went into the model fit
 Predict_data$log_depth_scaled = scale(log(Predict_data$BOTTOM_DEPTH))
 Predict_data$log_depth_scaled2 = Predict_data$log_depth_scaled ^ 2
-Predict_data$X = Predict_data$LONG / 10000
-Predict_data$Y = Predict_data$LAT / 10000
+Predict_data$X = Predict_data$LONG / unit_scale
+Predict_data$Y = Predict_data$LAT / unit_scale
 Predict_data = select(Predict_data, X, Y, log_depth_scaled, log_depth_scaled2)
 #Predict_data %>% rename(log_depth_scaled = log_depth_scaled.V1, log_depth_scaled2 = log_depth_scaled2.V1)
 

@@ -31,10 +31,11 @@ coordinates(haul_trans) <- c("longitude_dd", "latitude_dd")
 proj4string(haul_trans) <- CRS("+proj=longlat +datum=WGS84")
 newproj = paste("+proj=utm +zone=10 ellps=WGS84")
 #newproj = paste("+proj=aea +lat_1=55 +lat_2=65 +lat_0=50 +lon_0=-154 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+unit_scale <- 1000
 haul_trans <- spTransform(haul_trans, CRS(newproj))
 haul_trans = as.data.frame(haul_trans)
-haul_trans$longitude_dd = haul_trans$longitude_dd/10000
-haul_trans$latitude_dd = haul_trans$latitude_dd/10000
+haul_trans$longitude_dd = haul_trans$longitude_dd/unit_scale
+haul_trans$latitude_dd = haul_trans$latitude_dd/unit_scale
 haul_trans$year = as.numeric(substr(haul_trans$date_yyyymmdd,1,4))
 haul$X = haul_trans$longitude_dd
 haul$Y = haul_trans$latitude_dd
@@ -173,7 +174,7 @@ colnames(wc_grid) = c("X", "Y", "depth")
 # scale covariates
 wc_grid$log_depth_scaled <- (log(wc_grid$depth * -1) - mean(log(haul$depth_hi_prec_m))) / sd(log(haul$depth_hi_prec_m))
 wc_grid$log_depth_scaled2 <- wc_grid$log_depth_scaled ^ 2
-wc_grid$X <- wc_grid$X/10000
-wc_grid$Y <- wc_grid$Y/10000
+wc_grid$X <- wc_grid$X/unit_scale
+wc_grid$Y <- wc_grid$Y/unit_scale
 
 saveRDS(wc_grid, file=paste0("data/WC/WC_BTS/wc_grid.rds")) # save prediction grid

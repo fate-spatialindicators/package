@@ -17,7 +17,7 @@ setMKLthreads(parallel::detectCores(logical = FALSE) - 1)
 
 # specify # of knots for mesh
 n_knots = 750
-unit_scale = 10000
+unit_scale = 1000
 # specify species to model
 species = c("smooth_dogfish","spiny_dogfish", "winter_skate",
             "summer_flounder", "atlantic_cod", "american_plaice",
