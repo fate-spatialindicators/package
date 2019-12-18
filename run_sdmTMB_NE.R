@@ -15,7 +15,7 @@ setMKLthreads(parallel::detectCores(logical = FALSE) - 1)
 #########################################################################################################
 # options 
 
-# specify # of knots for mesh
+# specify # of knots for mesh (aim for ~0.002-0.003 * square kilometers of survey area)
 n_knots = 750
 unit_scale = 1000
 # specify species to model
@@ -100,6 +100,8 @@ for(spp in 1:length(species)) {
                       "longitude", "latitude", "X", "Y")) %>%
       dplyr::distinct(.keep_all = TRUE)
     
+    # create one mesh for all species, without subsetting by the geographic range of positive observations
+    c_spde <- make_spde(station_dat$X, station_dat$Y, n_knots = n_knots) 
     
     ## Select svspp and join station data
     data_spp <- data %>%
@@ -168,7 +170,8 @@ for(spp in 1:length(species)) {
              longitude, 
              latitude)
     
-    c_spde <- make_spde(data_sub$X, data_sub$Y, n_knots = n_knots) 
+    # if subset survey area by species, then make new mesh for each species
+    #c_spde <- make_spde(data_sub$X, data_sub$Y, n_knots = n_knots) 
     # plot_spde(c_spde)
 
     # start_time <- Sys.time()
