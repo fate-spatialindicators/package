@@ -175,7 +175,8 @@ for(spp in 1:length(species)) {
     # plot_spde(c_spde)
 
     # start_time <- Sys.time()
-    density_model <- sdmTMB(formula = density ~ log_depth_scaled + log_depth_scaled2 + as.factor(year),
+    density_model <- sdmTMB(formula = density ~ 0 + as.factor(year),
+                            time_varying = ~ 0 + log_depth_scaled + log_depth_scaled2,
                             data = data_sub,
                             time = "year", 
                             spde = c_spde, 
@@ -186,7 +187,21 @@ for(spp in 1:length(species)) {
     # end_time <- Sys.time()
 
     saveRDS(density_model, 
-            file = sprintf("output/NE/%s_%s_density.rds", species[spp], seasons[sea]))
+            file = sprintf("output/NE/%s_%s_density_depth_varying.rds", species[spp], seasons[sea]))
+    
+    # start_time <- Sys.time()
+    density_model_2 <- sdmTMB(formula = density ~ 0 + as.factor(year),
+                            data = data_sub,
+                            time = "year", 
+                            spde = c_spde, 
+                            anisotropy = TRUE,
+                            silent = FALSE,
+                            family = tweedie(link = "log"),
+                            control = sdmTMBcontrol(step.min = 0.01, step.max = 1))
+    # end_time <- Sys.time()
+    
+    saveRDS(density_model2, 
+            file = sprintf("output/NE/%s_%s_density_no_covar.rds", species[spp], seasons[sea]))
     # 
     # tt <- difftime(end_time, start_time)
     # time_difference <- sprintf("%s %s", round(tt[[1]], 0), attr(tt, "units"))
