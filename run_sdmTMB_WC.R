@@ -13,7 +13,7 @@ library(sp)
 # options 
 
 # specify # of knots for mesh
-n_knots = 750
+n_knots = 350
 
 # do cross validation?
 use_cv = FALSE
@@ -74,15 +74,16 @@ species = unique(catch$common_name)
 
 for(spp in 1:length(species)) {
   
-  # filter by species and only include range of coordinates with positive observations over the timeseries
   subset = dplyr::filter(catch, common_name == species[spp])
   haul_new = dplyr::left_join(haul, subset) 
   # Set NA CPUEs to 0
   haul_new$cpue_kg_km2[which(is.na(haul_new$cpue_kg_km2))] = 0
-  haul_new = dplyr::filter(haul_new, Latitude_dd >= min(Latitude_dd[which(cpue_kg_km2>0)]),
-                           Latitude_dd <= max(Latitude_dd[which(cpue_kg_km2>0)]),
-                           Longitude_dd >= min(Longitude_dd[which(cpue_kg_km2>0)]),
-                           Longitude_dd <= max(Longitude_dd[which(cpue_kg_km2>0)]))
+  
+  # filter by species and only include range of coordinates with positive observations over the timeseries
+  #haul_new = dplyr::filter(haul_new, Latitude_dd >= min(Latitude_dd[which(cpue_kg_km2>0)]),
+  #                         Latitude_dd <= max(Latitude_dd[which(cpue_kg_km2>0)]),
+  #                         Longitude_dd >= min(Longitude_dd[which(cpue_kg_km2>0)]),
+  #                         Longitude_dd <= max(Longitude_dd[which(cpue_kg_km2>0)]))
   
   # using AUC and Tweedie predictive density to evaluate performance
   # you can iterate fits over a range of number of knots by giving set of values rather than n_knots
