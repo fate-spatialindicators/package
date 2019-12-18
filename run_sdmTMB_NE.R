@@ -100,9 +100,6 @@ for(spp in 1:length(species)) {
                       "longitude", "latitude", "X", "Y")) %>%
       dplyr::distinct(.keep_all = TRUE)
     
-    # create one mesh for all species, without subsetting by the geographic range of positive observations
-    c_spde <- make_spde(station_dat$X, station_dat$Y, n_knots = n_knots) 
-    
     ## Select svspp and join station data
     data_spp <- data %>%
       dplyr::filter(common_name == species[spp]) %>%
@@ -130,6 +127,9 @@ for(spp in 1:length(species)) {
                                  TRUE ~ NA_real_),
              log_depth_scaled = scale(log(depth), scale = TRUE, center = TRUE),
              log_depth_scaled2 = log_depth_scaled^2)
+    
+    # create one mesh for all species, without subsetting by the geographic range of positive observations
+    c_spde <- make_spde(data_spp$X, data_spp$Y, n_knots = n_knots) 
     
     # # filter by species and only include range of coordinates with positive observations over the timeseries
     # data_sub <-  data_spp %>%
