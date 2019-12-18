@@ -22,7 +22,7 @@ unit_scale = 1000
 species = c("smooth_dogfish","spiny_dogfish", "winter_skate",
             "summer_flounder", "atlantic_cod", "american_plaice",
             "red_hake","silver_hake", "haddock",
-            "cusk", "str_sea_bass", "sea_raven")[c(1,4,5)]
+            "cusk", "str_sea_bass", "sea_raven")#[c(1,4,5)]
 
 ###########################################################################################################
 # Prepare data and fit models
@@ -128,7 +128,7 @@ for(spp in 1:length(species)) {
              log_depth_scaled = scale(log(depth), scale = TRUE, center = TRUE),
              log_depth_scaled2 = log_depth_scaled^2)
     
-    # create one mesh for all species, without subsetting by the geographic range of positive observations
+    # create one mesh with same extent and structure for all species, without subsetting by the geographic range of positive observations
     c_spde <- make_spde(data_spp$X, data_spp$Y, n_knots = n_knots) 
     
     # # filter by species and only include range of coordinates with positive observations over the timeseries
