@@ -69,16 +69,28 @@ for(spp in 1:length(species)) {
   data_sub$log_depth_scaled = scale(log(data_sub$bottom_depth))[,1]
   data_sub$log_depth_scaled2 = data_sub$log_depth_scaled ^ 2
   
-      density_model <- sdmTMB(formula = cpue ~ log_depth_scaled + log_depth_scaled2 + as.factor(year),
+      density_model <- sdmTMB(formula = cpue ~ 0 + as.factor(year),
+                              time_varying = ~ 0 + log_depth_scaled + log_depth_scaled2,
                               data = data_sub,
                               time = "year", 
                               spde = c_spde, 
+                              reml = TRUE,
                               anisotropy = TRUE,
                               family = tweedie(link = "log")
                               #control = sdmTMBcontrol(step.min = 0.01, step.max = 1)
                               )
+      density_model2 <- sdmTMB(formula = cpue ~ 0 + as.factor(year),
+                              data = data_sub,
+                              time = "year", 
+                              spde = c_spde, 
+                              reml = TRUE,
+                              anisotropy = TRUE,
+                              family = tweedie(link = "log")
+                              #control = sdmTMBcontrol(step.min = 0.01, step.max = 1)
+      )
       
-      saveRDS(density_model, file=paste0("output/AK/",species[spp],"_density.rds"))
+      saveRDS(density_model, file=paste0("output/AK/",species[spp],"_density_depth_varying.rds"))
+      saveRDS(density_model2, file=paste0("output/AK/",species[spp],"_density_no_covar.rds"))
 }
 
 ###########################################################################################################
