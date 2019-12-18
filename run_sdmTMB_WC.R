@@ -118,17 +118,30 @@ for(spp in 1:length(species)) {
       saveRDS(density_model, file=paste0("output/WC/",species[spp],"/",species[spp],"_",performance$knots[k],"_density.rds"))
     } else {
       c_spde <- make_spde(haul_new$X, haul_new$Y, n_knots = n_knots)
-      density_model <- sdmTMB(formula = cpue_kg_km2 ~ log_depth_scaled + log_depth_scaled2 + as.factor(year),
+      density_model <- sdmTMB(formula = cpue_kg_km2 ~ 0 + as.factor(year),
+                              time_varying = ~ 0 + log_depth_scaled + log_depth_scaled2,
                               data = haul_new,
                               time = "year", 
                               spde = c_spde, 
+                              reml = TRUE, 
+                              anisotropy = TRUE,
+                              family = tweedie(link = "log"),
+                              control = sdmTMBcontrol(step.min = 0.01, step.max = 1)
+                              )
+      
+      density_model2 <- sdmTMB(formula = cpue_kg_km2 ~ 0 + as.factor(year),
+                              data = haul_new,
+                              time = "year", 
+                              spde = c_spde, 
+                              reml = TRUE, 
                               anisotropy = TRUE,
                               family = tweedie(link = "log"),
                               control = sdmTMBcontrol(step.min = 0.01, step.max = 1)
                               )
       
       if(!dir.exists(paste0("output/WC/",species[spp]))) dir.create(paste0("output/WC/",species[spp]))
-      saveRDS(density_model, file=paste0("output/WC/",species[spp],"/",species[spp],"_",performance$knots[k],"_density.rds"))
+      saveRDS(density_model, file=paste0("output/WC/",species[spp],"/",species[spp],"_",performance$knots[k],"_density_depth_varying.rds"))
+      saveRDS(density_model2, file=paste0("output/WC/",species[spp],"/",species[spp],"_",performance$knots[k],"_density_no_covar.rds"))
       
     }
     
