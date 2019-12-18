@@ -168,7 +168,7 @@ CCA = sp::spTransform(CCA, sp::CRS(newproj))
 # mask CCA from bathymetry raster used for prediction
 bathy_raster = raster::mask(bathy_raster, CCA, inverse = TRUE)
 # create matrix of point data with coordinates and depth from raster
-wc_grid <- as.data.frame(rasterToPoints(bathy_raster))
+wc_grid <- as.data.frame(rasterToPoints(bathy_raster)) # rough area of survey extent is 123497km^2, from 2.778*3.704 (cell res) * nrow(wc_grid) = 12002 
 colnames(wc_grid) = c("X", "Y", "depth")
 
 # scale covariates
