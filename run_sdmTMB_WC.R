@@ -75,7 +75,9 @@ species = unique(catch$common_name)
 for(spp in 1:length(species)) {
   
   subset = dplyr::filter(catch, common_name == species[spp])
-  haul_new = dplyr::left_join(haul, subset) 
+  haul_new = haul %>% 
+    left_join(subset, by = "trawl_id") %>% 
+    select(trawl_id, X, Y, latitude = latitude_dd.x, longitude = longitude_dd.x, year = year.x, log_depth_scaled, log_depth_scaled2, cpue_kg_km2)
   # Set NA CPUEs to 0
   haul_new$cpue_kg_km2[which(is.na(haul_new$cpue_kg_km2))] = 0
   
