@@ -54,7 +54,7 @@ catch = dplyr::rename(catch, trawl_id = Trawl_id)
 catch$trawl_id = as.numeric(catch$trawl_id)
 
 catch$common_name = NA
-#catch$common_name[which(catch$Scientific_name=="Ophiodon elongatus")] = "lingcod"
+catch$common_name[which(catch$Scientific_name=="Ophiodon elongatus")] = "lingcod"
 catch$common_name[which(catch$Scientific_name=="Microstomus pacificus")] = "Dover sole"
 catch$common_name[which(catch$Scientific_name=="Sebastolobus alascanus")] = "shortspine thornyhead"
 catch$common_name[which(catch$Scientific_name=="Atheresthes stomias")] = "arrowtooth flounder"

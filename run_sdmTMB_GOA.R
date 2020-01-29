@@ -17,7 +17,7 @@ n_knots = 800
 # specify species to model
 species = c("Dover sole","arrowtooth flounder", "Pacific halibut",
             "walleye pollock", "rex sole", "English sole","sablefish","Pacific cod",
-            "spiny dogfish","longnose skate","big skate", "Pacific ocean perch")
+            "spiny dogfish","longnose skate","big skate", "Pacific ocean perch", "lingcod")
 
 ###########################################################################################################
 # Prepare data and fit models
