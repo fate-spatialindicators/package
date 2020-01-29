@@ -89,7 +89,8 @@ for(spp in 1:length(species)) {
   # you can iterate fits over a range of number of knots by giving set of values rather than n_knots
   performance <- data.frame(
     knots = n_knots,
-    auc = 0, tweedie_dens = 0
+    auc = NA, 
+    tweedie_dens = NA
   )
   
   for (k in seq_len(nrow(performance))) {
@@ -102,23 +103,46 @@ for(spp in 1:length(species)) {
     haul_new$fold[which(haul_new$Latitude_dd < quantile(haul_new$Latitude_dd,0.4))] = 2
     haul_new$fold[which(haul_new$Latitude_dd < quantile(haul_new$Latitude_dd,0.2))] = 1
     
-    # Set NA CPUEs to 0
-    haul_new$cpue_kg_km2[which(is.na(haul_new$cpue_kg_km2))] = 0
+    # Create species-specific directories to save output
+    if(!dir.exists(paste0("output/WC/",species[spp]))) dir.create(paste0("output/WC/",species[spp]))
     
     if(use_cv==TRUE) {
-      density_model <- sdmTMB_cv(formula = cpue_kg_km2 ~ log_depth_scaled + log_depth_scaled2 + as.factor(year),
-                                 data = haul_new, x = "X", y = "Y", k_folds=max(haul_new$fold), fold_ids = "fold",
-                                 n_knots = n_knots,
+      density_model <- sdmTMB_cv(formula = cpue_kg_km2 ~ 0 + as.factor(year),
+                                 time_varying = ~ 0 + log_depth_scaled + log_depth_scaled2,
+                                 data = haul_new, 
+                                 x = "X", y = "Y", 
+                                 k_folds=max(haul_new$fold), 
+                                 fold_ids = "fold",
+                                 n_knots = performance$knots[k],
+                                 reml = TRUE, 
+                                 time = "year", 
+                                 anisotropy = TRUE,
+                                 family = tweedie(link = "log"),
+                                 control = sdmTMBcontrol(step.min = 0.01, step.max = 1)
+                                 )
+
+      density_model2 <- sdmTMB_cv(formula = cpue_kg_km2 ~ 0 + as.factor(year),
+                                 data = haul_new, 
+                                 x = "X", y = "Y", 
+                                 k_folds=max(haul_new$fold), 
+                                 fold_ids = "fold",
+                                 n_knots = performance$knots[k],
+                                 reml = TRUE, 
                                  time = "year", 
                                  anisotropy = TRUE,
                                  family = tweedie(link = "log"),
                                  control = sdmTMBcontrol(step.min = 0.01, step.max = 1)
                                  )
       
-      if(!dir.exists(paste0("output/WC/",species[spp]))) dir.create(paste0("output/WC/",species[spp]))
-      saveRDS(density_model, file=paste0("output/WC/",species[spp],"/",species[spp],"_",performance$knots[k],"_density.rds"))
+      saveRDS(density_model, file=paste0("output/WC/",species[spp],"/",species[spp],"_",performance$knots[k],"cv_density_depth_varying.rds"))
+      saveRDS(density_model2, file=paste0("output/WC/",species[spp],"/",species[spp],"_",performance$knots[k],"cv_density_no_covar.rds"))
+      
+      # validate against the test set
+      performance[k, "tweedie_dens"] = sum(density_model$data$cv_loglik)
+      saveRDS(performance, file = paste0("output/WC/",species[spp],"_performance.rds"))
+      
     } else {
-      c_spde <- make_spde(haul_new$X, haul_new$Y, n_knots = n_knots)
+      c_spde <- make_spde(haul_new$X, haul_new$Y, n_knots = performance$knots[k])
       density_model <- sdmTMB(formula = cpue_kg_km2 ~ 0 + as.factor(year),
                               time_varying = ~ 0 + log_depth_scaled + log_depth_scaled2,
                               data = haul_new,
@@ -140,22 +164,13 @@ for(spp in 1:length(species)) {
                               control = sdmTMBcontrol(step.min = 0.01, step.max = 1)
                               )
       
-      if(!dir.exists(paste0("output/WC/",species[spp]))) dir.create(paste0("output/WC/",species[spp]))
       saveRDS(density_model, file=paste0("output/WC/",species[spp],"/",species[spp],"_",performance$knots[k],"_density_depth_varying.rds"))
       saveRDS(density_model2, file=paste0("output/WC/",species[spp],"/",species[spp],"_",performance$knots[k],"_density_no_covar.rds"))
-      
     }
-    
-    # validate against the test set
-    performance[k, "tweedie_dens"] = sum(density_model$data$cv_loglik)
-    
-    saveRDS(performance, file = paste0("output/WC/",species[spp],"_performance.rds"))
   }
-  
   # plot Tweedie predictive density as a function of knots. Higher is better.
   #b <- ggplot(performance, aes(knots, tweedie_dens)) + geom_point() +
   #  geom_line() + ylab("Tweedie predictive density") + xlab("Knots")
-  
   #performance_plot <- ggpubr::ggarrange(a, b, ncol = 1, nrow = 2)
   #ggpubr::ggexport(performance_plot, filename = paste0("output/WC/",species[spp],"_knots.pdf"))
 }
