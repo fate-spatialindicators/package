@@ -22,10 +22,10 @@ use_cv = FALSE
 # Prepare data and fit models
 
 # haul data includes environmental covariates with location information
-haul = nwfscSurvey::PullHaul.fn(SurveyName = "NWFSC.Combo")
+haul = nwfscSurvey::PullHaul.fn(YearRange = c(2003,2018), SurveyName = "NWFSC.Combo")
 
 # project lat/lon to UTM, after removing missing values and unsatisfactory hauls
-haul = haul %>% filter(!is.na(longitude_dd), performance == "Satisfactory")
+haul = haul %>% filter(!is.na(longitude_dd), !is.na(latitude_dd), performance == "Satisfactory")
 haul_trans = haul
 coordinates(haul_trans) <- c("longitude_dd", "latitude_dd")
 proj4string(haul_trans) <- CRS("+proj=longlat +datum=WGS84")
@@ -48,25 +48,25 @@ haul$log_depth_scaled = scale(log(haul$depth_hi_prec_m))
 haul$log_depth_scaled2 = haul$log_depth_scaled ^ 2
 
 # catch data includes catch, effort, etc. This takes a few minutes to grab all ~ 900 spp
-catch = nwfscSurvey::PullCatch.fn(SurveyName="NWFSC.Combo")
+catch = nwfscSurvey::PullCatch.fn(YearRange = c(2003,2018), SurveyName="NWFSC.Combo")
 # format to later join catch and haul
-catch = dplyr::rename(catch, trawl_id = Trawl_id)
+names(catch) = tolower(names(catch))
 catch$trawl_id = as.numeric(catch$trawl_id)
 
 catch$common_name = NA
-catch$common_name[which(catch$Scientific_name=="Ophiodon elongatus")] = "lingcod"
-catch$common_name[which(catch$Scientific_name=="Microstomus pacificus")] = "Dover sole"
-catch$common_name[which(catch$Scientific_name=="Sebastolobus alascanus")] = "shortspine thornyhead"
-catch$common_name[which(catch$Scientific_name=="Atheresthes stomias")] = "arrowtooth flounder"
-catch$common_name[which(catch$Scientific_name=="Hippoglossus stenolepis")] = "Pacific halibut"
-catch$common_name[which(catch$Scientific_name=="Glyptocephalus zachirus")] = "rex sole"
-catch$common_name[which(catch$Scientific_name=="Parophrys vetulus")] = "English sole"
-catch$common_name[which(catch$Scientific_name=="Anoplopoma fimbria")] = "sablefish"
-catch$common_name[which(catch$Scientific_name=="Sebastes alutus")] = "Pacific ocean perch"
-catch$common_name[which(catch$Scientific_name=="Gadus macrocephalus")] = "Pacific cod" # few obs
-catch$common_name[which(catch$Scientific_name=="Raja rhina")] = "longnose skate"
-catch$common_name[which(catch$Scientific_name=="Raja binoculata")] = "big skate"
-catch$common_name[which(catch$Scientific_name=="Squalus suckleyi")] = "spiny dogfish"
+catch$common_name[which(catch$scientific_name=="Ophiodon elongatus")] = "lingcod"
+catch$common_name[which(catch$scientific_name=="Microstomus pacificus")] = "Dover sole"
+catch$common_name[which(catch$scientific_name=="Sebastolobus alascanus")] = "shortspine thornyhead"
+catch$common_name[which(catch$scientific_name=="Atheresthes stomias")] = "arrowtooth flounder"
+catch$common_name[which(catch$scientific_name=="Hippoglossus stenolepis")] = "Pacific halibut"
+catch$common_name[which(catch$scientific_name=="Glyptocephalus zachirus")] = "rex sole"
+catch$common_name[which(catch$scientific_name=="Parophrys vetulus")] = "English sole"
+catch$common_name[which(catch$scientific_name=="Anoplopoma fimbria")] = "sablefish"
+catch$common_name[which(catch$scientific_name=="Sebastes alutus")] = "Pacific ocean perch"
+catch$common_name[which(catch$scientific_name=="Gadus macrocephalus")] = "Pacific cod" # few obs
+catch$common_name[which(catch$scientific_name=="Raja rhina")] = "longnose skate"
+catch$common_name[which(catch$scientific_name=="Raja binoculata")] = "big skate"
+catch$common_name[which(catch$scientific_name=="Squalus suckleyi")] = "spiny dogfish"
 catch = dplyr::filter(catch, !is.na(common_name))
 
 # Loop over species
@@ -80,10 +80,10 @@ for(spp in 1:length(species)) {
   haul_new$cpue_kg_km2[which(is.na(haul_new$cpue_kg_km2))] = 0
   
   # filter by species and only include range of coordinates with positive observations over the timeseries
-  #haul_new = dplyr::filter(haul_new, Latitude_dd >= min(Latitude_dd[which(cpue_kg_km2>0)]),
-  #                         Latitude_dd <= max(Latitude_dd[which(cpue_kg_km2>0)]),
-  #                         Longitude_dd >= min(Longitude_dd[which(cpue_kg_km2>0)]),
-  #                         Longitude_dd <= max(Longitude_dd[which(cpue_kg_km2>0)]))
+  #haul_new = dplyr::filter(haul_new, latitude_dd >= min(latitude_dd[which(cpue_kg_km2>0)]),
+  #                         latitude_dd <= max(latitude_dd[which(cpue_kg_km2>0)]),
+  #                         longitude_dd >= min(longitude_dd[which(cpue_kg_km2>0)]),
+  #                         longitude_dd <= max(longitude_dd[which(cpue_kg_km2>0)]))
   
   # using AUC and Tweedie predictive density to evaluate performance
   # you can iterate fits over a range of number of knots by giving set of values rather than n_knots
@@ -95,18 +95,17 @@ for(spp in 1:length(species)) {
   
   for (k in seq_len(nrow(performance))) {
     
-    # sdmTMB_cv
-    # create ids based on latitude quantiles
-    haul_new$fold = 5
-    haul_new$fold[which(haul_new$Latitude_dd < quantile(haul_new$Latitude_dd,0.8))] = 4
-    haul_new$fold[which(haul_new$Latitude_dd < quantile(haul_new$Latitude_dd,0.6))] = 3
-    haul_new$fold[which(haul_new$Latitude_dd < quantile(haul_new$Latitude_dd,0.4))] = 2
-    haul_new$fold[which(haul_new$Latitude_dd < quantile(haul_new$Latitude_dd,0.2))] = 1
-    
     # Create species-specific directories to save output
     if(!dir.exists(paste0("output/WC/",species[spp]))) dir.create(paste0("output/WC/",species[spp]))
     
     if(use_cv==TRUE) {
+      # create ids based on latitude quantiles
+      haul_new$fold = 5
+      haul_new$fold[which(haul_new$latitude_dd < quantile(haul_new$latitude_dd,0.8))] = 4
+      haul_new$fold[which(haul_new$latitude_dd < quantile(haul_new$latitude_dd,0.6))] = 3
+      haul_new$fold[which(haul_new$latitude_dd < quantile(haul_new$latitude_dd,0.4))] = 2
+      haul_new$fold[which(haul_new$latitude_dd < quantile(haul_new$latitude_dd,0.2))] = 1
+      
       density_model <- sdmTMB_cv(formula = cpue_kg_km2 ~ 0 + as.factor(year),
                                  time_varying = ~ 0 + log_depth_scaled + log_depth_scaled2,
                                  data = haul_new, 
@@ -195,7 +194,7 @@ bathy_raster <- projectRaster(bathy_hiRes, predict_raster, crs = newproj, method
 CCA = rgdal::readOGR('data/WC/WC_BTS/shapefiles/spatial_closure_boundaries/kv299cy7357.shp')
 CCA = sp::spTransform(CCA, sp::CRS(newproj))
 # mask CCA from bathymetry raster used for prediction
-bathy_raster = raster::mask(bathy_raster, CCA, inverse = TRUE)
+bathy_raster = suppressWarnings(raster::mask(bathy_raster, CCA, inverse = TRUE))
 # create matrix of point data with coordinates and depth from raster
 wc_grid <- as.data.frame(rasterToPoints(bathy_raster)) # rough area of survey extent is 123497km^2, from 2.778*3.704 (cell res) * nrow(wc_grid) = 12002 
 colnames(wc_grid) = c("X", "Y", "depth")
