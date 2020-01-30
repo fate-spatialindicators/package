@@ -176,7 +176,7 @@ for(spp in 1:length(species)) {
 
 ##########################################################################################################
 # make prediction raster roughly from grid_cell centroids, given standard cell dimensions (here in meters, converted from nm)
-# TO DO: standardize prediction grid resolution with other regions?
+# TO DO: standardize prediction grid resolution with other regions?  Also move this chunk to plotting script or own script?
 
 # read in the grid cell data from the survey design
 grid_cells = readxl::read_excel("data/WC/WC_BTS/shapefiles/survey_grid/Selection Set 2018 with Cell Corners.xlsx")
