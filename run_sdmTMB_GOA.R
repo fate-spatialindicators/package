@@ -1,9 +1,8 @@
-# Simplified code example for model fitting and prediction with sdmTMB
+# Fitting spatiotemporal models to Gulf of Alaska Groundfish Bottom Trawl data with sdmTMB (and simple example of workflow)
 
 #devtools::install_github("pbs-assess/sdmTMB")
 #library(INLA) # if we want tools to make other meshes
-library(ggplot2)
-library(raster)
+#library(ggplot2) # only needed for cross-validation plots or example prediction plot
 library(dplyr)
 library(sdmTMB)
 library(sp)
@@ -12,12 +11,14 @@ library(sp)
 # options 
 
 # specify # of knots for mesh
-n_knots = 800
+n_knots = 750
 
 # specify species to model
 species = c("Dover sole","arrowtooth flounder", "Pacific halibut",
             "walleye pollock", "rex sole", "English sole","sablefish","Pacific cod",
-            "spiny dogfish","longnose skate","big skate", "Pacific ocean perch", "lingcod")
+            "spiny dogfish","longnose skate","big skate", "Pacific ocean perch", 
+            "northern rockfish", "butter sole", "flathead sole", "dusky rockfish", "rock soles")
+#To follow up: Few dusky rockfish in 1990, were they identified as something else?  Add lingcod to cpue data?
 
 ###########################################################################################################
 # Prepare data and fit models
@@ -25,10 +26,20 @@ species = c("Dover sole","arrowtooth flounder", "Pacific halibut",
 # Load combined catch and haul data 
 data <- readRDS("data/AK/AK_BTS/AK_BTS.rds")
 
-# filter to GOA survey, remove tows with 0 bottom depth, and drop 2001 year when survey was incomplete, years before 1990 when a different net was used
-data <- data %>% filter(SURVEY == "GOA", BOTTOM_DEPTH > 0, YEAR != 2001 & YEAR > 1989)
+# filter to GOA survey, remove tows with 0 bottom depth, and drop 2001 year when survey was incomplete, 
+# years before 1990 when a different net was used
+data <- data %>% filter(SURVEY == "GOA", BOTTOM_DEPTH > 0, YEAR != 2001 & YEAR > 1989) 
+  
+#sum catches of northern and southern rock sole with rock sole unid. (not distinguished until 1996)
+rock_soles <- data %>% dplyr::filter(COMMON_NAME %in% c("rock sole unid.", "southern rock sole", "northern rock sole")) %>%
+  group_by_at(vars(-CPUE, -COMMON_NAME, -SPECIES_NAME)) %>% 
+  summarise(CPUE = sum(CPUE)) %>% 
+  ungroup() %>% 
+  mutate(SPECIES_NAME = "Lepidopsetta spp.", COMMON_NAME = "rock soles")
+data <- as.data.frame(rbind(data, rock_soles))
 
-# read in the grid cell data from the survey design (one may choose to pre-specify which hauls are in which cells)
+# read in the grid cell data from the survey design 
+# (one may choose to pre-specify which hauls are in which cells, or use this to guide resolution of prediction grid)
 #grid_cells = read.csv(paste0(here::here(),"/data/AK/AK_BTS/survey_grids/grid_GOA.csv"))
 
 # project to UTM
@@ -89,8 +100,8 @@ for(spp in 1:length(species)) {
                               #control = sdmTMBcontrol(step.min = 0.01, step.max = 1)
       )
       
-      saveRDS(density_model, file=paste0("output/AK/",species[spp],"_density_depth_varying.rds"))
-      saveRDS(density_model2, file=paste0("output/AK/",species[spp],"_density_no_covar.rds"))
+      saveRDS(density_model, file=paste0("output/AK/",species[spp],"_",performance$knots[k],"_density_depth_varying.rds"))
+      saveRDS(density_model2, file=paste0("output/AK/",species[spp],"_",performance$knots[k],"_density_no_covar.rds"))
 }
 
 ###########################################################################################################
@@ -111,7 +122,6 @@ Predict_data$log_depth_scaled2 = Predict_data$log_depth_scaled ^ 2
 Predict_data$X = Predict_data$LONG / unit_scale
 Predict_data$Y = Predict_data$LAT / unit_scale
 Predict_data = select(Predict_data, X, Y, log_depth_scaled, log_depth_scaled2)
-#Predict_data %>% rename(log_depth_scaled = log_depth_scaled.V1, log_depth_scaled2 = log_depth_scaled2.V1)
 
 # make replicates for each year in data
 Predict_data_years = Predict_data
