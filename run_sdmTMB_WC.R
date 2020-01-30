@@ -1,10 +1,8 @@
 # Fitting spatiotemporal models to West Coast Groundfish Bottom Trawl data with sdmTMB
-# TO DO: further standardization with other regions regarding projections and prediction grid resolution
 
 #devtools::install_github("pbs-assess/sdmTMB")
 #library(INLA) # if we want tools to make other meshes
-library(ggplot2)
-library(raster)
+#library(ggplot2) # only needed for cross-validation plots
 library(dplyr)
 library(sdmTMB)
 library(sp)
@@ -58,7 +56,7 @@ catch$common_name[which(catch$scientific_name=="Ophiodon elongatus")] = "lingcod
 catch$common_name[which(catch$scientific_name=="Microstomus pacificus")] = "Dover sole"
 catch$common_name[which(catch$scientific_name=="Sebastolobus alascanus")] = "shortspine thornyhead"
 catch$common_name[which(catch$scientific_name=="Atheresthes stomias")] = "arrowtooth flounder"
-catch$common_name[which(catch$scientific_name=="Hippoglossus stenolepis")] = "Pacific halibut"
+#catch$common_name[which(catch$scientific_name=="Hippoglossus stenolepis")] = "Pacific halibut" # few obs, model fit issues
 catch$common_name[which(catch$scientific_name=="Glyptocephalus zachirus")] = "rex sole"
 catch$common_name[which(catch$scientific_name=="Parophrys vetulus")] = "English sole"
 catch$common_name[which(catch$scientific_name=="Anoplopoma fimbria")] = "sablefish"
@@ -178,6 +176,7 @@ for(spp in 1:length(species)) {
 
 ##########################################################################################################
 # make prediction raster roughly from grid_cell centroids, given standard cell dimensions (here in meters, converted from nm)
+# TO DO: standardize prediction grid resolution with other regions?
 
 # read in the grid cell data from the survey design
 grid_cells = readxl::read_excel("data/WC/WC_BTS/shapefiles/survey_grid/Selection Set 2018 with Cell Corners.xlsx")
@@ -186,19 +185,19 @@ proj4string(grid_cells) <- CRS("+proj=longlat +datum=WGS84")
 grid_cells <- spTransform(grid_cells, CRS(newproj))
 
 # make prediction raster roughly from grid_cell centroids, given standard cell dimensions (here in meters, converted from nm)
-predict_raster = raster(grid_cells, resolution = c(2778,3704), vals = NULL)
+predict_raster = raster::raster(grid_cells, resolution = c(2778,3704), vals = NULL)
 ## load custom bathymetry raster
-bathy_hiRes <- raster("data/WC/WC_BTS/shapefiles/bathy_clipped")
+bathy_hiRes <- raster::raster("data/WC/WC_BTS/shapefiles/bathy_clipped")
 bathy_hiRes <- bathy_hiRes / 10 # units were originally decimeters, so convert to meters
 # aggregate and project bathymetry to survey grid cells, the absolute minimum resolution of the prediction grid
-bathy_raster <- projectRaster(bathy_hiRes, predict_raster, crs = newproj, method="bilinear")
+bathy_raster <- raster::projectRaster(bathy_hiRes, predict_raster, crs = newproj, method="bilinear")
 # load Cowcod Conservation Areas, not included in trawl survey, and reproject
 CCA = rgdal::readOGR('data/WC/WC_BTS/shapefiles/spatial_closure_boundaries/kv299cy7357.shp')
 CCA = sp::spTransform(CCA, sp::CRS(newproj))
 # mask CCA from bathymetry raster used for prediction
 bathy_raster = suppressWarnings(raster::mask(bathy_raster, CCA, inverse = TRUE))
 # create matrix of point data with coordinates and depth from raster
-wc_grid <- as.data.frame(rasterToPoints(bathy_raster)) # rough area of survey extent is 123497km^2, from 2.778*3.704 (cell res) * nrow(wc_grid) = 12002 
+wc_grid <- as.data.frame(raster::rasterToPoints(bathy_raster)) # rough area of survey extent is 123497km^2, from 2.778*3.704 (cell res) * nrow(wc_grid) = 12002 
 colnames(wc_grid) = c("X", "Y", "depth")
 
 # scale covariates
