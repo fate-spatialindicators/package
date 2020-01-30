@@ -19,7 +19,7 @@ for(i in 2:length(unique(years))) {
   Predict_data_years = rbind(Predict_data_years, wc_grid)
 }
 
-species = sort(c("Dover sole","arrowtooth flounder", "Pacific halibut",
+species = sort(c("lingcod","Dover sole","arrowtooth flounder",
             "rex sole", "English sole","sablefish","Pacific cod",
             "spiny dogfish","longnose skate","big skate", "Pacific ocean perch"))
 
@@ -66,7 +66,7 @@ mycgifun <- function(mycgi){
 
 # loop over species
 for(spp in 1:length(species)) {
-  d = readRDS(paste0("output/WC/", species[spp],"/", species[spp],"_750_density.rds"))
+  d = readRDS(paste0("output/WC/", species[spp],"/", species[spp],"_350_density.rds"))
   # below 2 lines necessary for models fit with older sdmTMB versions
   #d$tmb_data$weights_i = rep(1, length(d$tmb_data$y_i))
   #d$tmb_data$calc_quadratic_range = as.integer(FALSE)
