@@ -88,12 +88,10 @@ for(spp in 1:length(species)) {
   # using AUC and Tweedie predictive density to evaluate performance
   # you can iterate fits over a range of number of knots by giving set of values rather than n_knots
   performance <- data.frame(
-    knots = n_knots,
-    auc = NA, 
-    tweedie_dens = NA
+    knots = n_knots
   )
   
-  for (k in seq_len(nrow(performance))) {
+  for (k in seq_len(length(n_knots))) {
     
     # Create species-specific directories to save output
     if(!dir.exists(paste0("output/WC/",species[spp]))) dir.create(paste0("output/WC/",species[spp]))
@@ -101,10 +99,10 @@ for(spp in 1:length(species)) {
     if(use_cv==TRUE) {
       # create ids based on latitude quantiles
       haul_new$fold = 5
-      haul_new$fold[which(haul_new$latitude_dd < quantile(haul_new$latitude_dd,0.8))] = 4
-      haul_new$fold[which(haul_new$latitude_dd < quantile(haul_new$latitude_dd,0.6))] = 3
-      haul_new$fold[which(haul_new$latitude_dd < quantile(haul_new$latitude_dd,0.4))] = 2
-      haul_new$fold[which(haul_new$latitude_dd < quantile(haul_new$latitude_dd,0.2))] = 1
+      haul_new$fold[which(haul_new$latitude < quantile(haul_new$latitude,0.8))] = 4
+      haul_new$fold[which(haul_new$latitude < quantile(haul_new$latitude,0.6))] = 3
+      haul_new$fold[which(haul_new$latitude < quantile(haul_new$latitude,0.4))] = 2
+      haul_new$fold[which(haul_new$latitude < quantile(haul_new$latitude,0.2))] = 1
       
       density_model <- sdmTMB_cv(formula = cpue_kg_km2 ~ 0 + as.factor(year),
                                  time_varying = ~ 0 + log_depth_scaled + log_depth_scaled2,
@@ -136,8 +134,9 @@ for(spp in 1:length(species)) {
       saveRDS(density_model, file=paste0("output/WC/",species[spp],"/",species[spp],"_",performance$knots[k],"cv_density_depth_varying.rds"))
       saveRDS(density_model2, file=paste0("output/WC/",species[spp],"/",species[spp],"_",performance$knots[k],"cv_density_no_covar.rds"))
       
-      # validate against the test set
-      performance[k, "tweedie_dens"] = sum(density_model$data$cv_loglik)
+      # validate against the test set (note that currently you need to manually specify which models you want the performance metrics from)
+      performance[k, "tweedie_dens_m1"] = sum(density_model$sum_loglik)
+      performance[k, "tweedie_dens_m2"] = sum(density_model_2$sum_loglik)
       saveRDS(performance, file = paste0("output/WC/",species[spp],"_performance.rds"))
       
     } else {
