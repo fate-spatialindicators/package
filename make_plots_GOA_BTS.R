@@ -192,15 +192,10 @@ for(spp in 1:length(species)) {
   residuals_plots[[spp]] = plot_map_point(data, "residuals") + facet_wrap(~year) + geom_point(size=0.05, alpha=0.1) +
     coord_fixed() + scale_color_gradient2() + ggtitle(species[spp])
   # check convergence and parameter estimates
-  sd = as.data.frame(summary(TMB::sdreport(d$tmb_obj)))
-  r <- d$tmb_obj$report()# check estimates of standard deviation in spatial (O for Omega) vs spatiotemporal (E for Epsilon) processes
-  sink(file = "output/AK/sdreport.txt", append = TRUE)
+  sink(file = "output/GOA/report.txt", append = TRUE)
   print(species[spp])
+  print(d)
   print(d$sd_report)
-  print("spatial standard deviation")
-  print(r$sigma_O)
-  print("spatiotemporal standard deviation")
-  print(r$sigma_E)
   sink()
 # check whether AR1 assumption is supported in models where fields are not IID, printing estimate and 95%CI for AR1 param
 #print("AR1 estimate")
