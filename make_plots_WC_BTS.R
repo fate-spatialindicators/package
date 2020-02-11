@@ -19,7 +19,8 @@ for(i in 2:length(unique(years))) {
   Predict_data_years = rbind(Predict_data_years, wc_grid)
 }
 
-species = sort(c("lingcod","Dover sole","arrowtooth flounder",
+# specify species to include, later drop "lingcod" back in, but leaving out here because was not included for GOA
+species = sort(c("Dover sole","arrowtooth flounder",
             "rex sole", "English sole","sablefish","Pacific cod",
             "spiny dogfish","longnose skate","big skate", "Pacific ocean perch"))
 
@@ -66,10 +67,14 @@ mycgifun <- function(mycgi){
 
 # loop over species
 for(spp in 1:length(species)) {
-  d = readRDS(paste0("output/WC/", species[spp],"/", species[spp],"_350_density.rds"))
+  # choose model structure, with or without depth
+  d = readRDS(paste0("output/WC/", species[spp],"/", species[spp],"_350_density_depth_varying.rds")) 
+  #d = readRDS(paste0("output/WC/", species[spp],"/", species[spp],"_350_density_no_covar.rds")) 
+  
   # below 2 lines necessary for models fit with older sdmTMB versions
   #d$tmb_data$weights_i = rep(1, length(d$tmb_data$y_i))
   #d$tmb_data$calc_quadratic_range = as.integer(FALSE)
+  
   p = predict(d, newdata=Predict_data_years)
   
   # calculate COGs and inertia in 2 dimensions

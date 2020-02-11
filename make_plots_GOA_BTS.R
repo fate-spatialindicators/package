@@ -10,9 +10,10 @@ library(ggforce) # for plotting ellipses
 
 Predict_data_years = readRDS("data/AK/AK_BTS/GOA_predict_data.rds") # save prediction grid
 
-species = sort(c("Dover sole","arrowtooth flounder", "Pacific halibut",
-            "walleye pollock", "rex sole", "English sole","sablefish","Pacific cod",
-            "spiny dogfish","longnose skate","big skate", "Pacific ocean perch"))
+# specify species to include, remeber to expand set for comparison to fishery data
+species = sort(c("Dover sole","arrowtooth flounder",
+                 "rex sole", "English sole","sablefish","Pacific cod",
+                 "spiny dogfish","longnose skate","big skate", "Pacific ocean perch"))
 
 anisotropy_plots = list()
 qq_plots = list()
@@ -57,10 +58,14 @@ mycgifun <- function(mycgi){
 
 # loop over species
 for(spp in 1:length(species)) {
-  d = readRDS(paste0("output/AK/", species[spp],"_density.rds"))
+  # choose model structure, with or without depth
+  d = readRDS(paste0("output/AK/", species[spp],"_750_density_depth_varying.rds"))
+  #d = readRDS(paste0("output/AK/", species[spp],"_750_density_depth_varying.rds"))
+  
   # below 2 lines necessary for models fit with older sdmTMB versions
   #d$tmb_data$weights_i = rep(1, length(d$tmb_data$y_i))
   #d$tmb_data$calc_quadratic_range = as.integer(FALSE)
+  
   p = predict(d, newdata=Predict_data_years)
   
   # calculate COGs and inertia in 2 dimensions
