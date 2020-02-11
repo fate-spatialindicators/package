@@ -8,7 +8,14 @@ library(sp)
 library(broom)
 library(ggforce) # for plotting ellipses
 
-Predict_data_years = readRDS("data/AK/AK_BTS/GOA_predict_data.rds") # save prediction grid
+# get coastlines and transform to projection and scale of data
+shore <- rnaturalearth::ne_countries(continent = "north america", scale = "medium", returnclass = "sp")
+shore <- sp::spTransform(shore, CRS = "+proj=aea +lat_1=55 +lat_2=65 +lat_0=50 +lon_0=-154 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+shore <- fortify(shore)
+shore$long <- shore$long/1000
+shore$lat <- shore$lat/1000
+
+Predict_data_years = readRDS("data/AK/AK_BTS/GOA_predict_data.rds") # load prediction grid
 
 # specify species to include, remeber to expand set for comparison to fishery data
 species = sort(c("Dover sole","arrowtooth flounder",
@@ -32,12 +39,14 @@ gic_plots = list()
 # plotting functions
 plot_map_point <- function(dat, column = "omega_s") {
   ggplot(dat, aes_string("X", "Y", colour = column)) +
+    annotation_map(shore, color = "black", fill = "white", size=0.1) +
     geom_point(size=0.1) +
     xlab("Longitude") +
     ylab("Latitude")
 }
 plot_map_raster <- function(dat, column = "omega_s") {
   ggplot(dat, aes_string("X", "Y", fill = column)) +
+    annotation_map(shore, color = "black", fill = "white", size=0.1) +
     geom_raster() +
     scale_fill_viridis_c() +
     xlab("Longitude") +
@@ -58,9 +67,9 @@ mycgifun <- function(mycgi){
 
 # loop over species
 for(spp in 1:length(species)) {
-  # choose model structure, with or without depth
-  d = readRDS(paste0("output/AK/", species[spp],"_750_density_depth_varying.rds"))
-  #d = readRDS(paste0("output/AK/", species[spp],"_750_density_depth_varying.rds"))
+  # choose model structure, with or without depth (also need to do some batch renaming of outputs files, replacing "350" with "750" for knots)
+  d = readRDS(paste0("output/AK/", species[spp],"_350_density_depth_varying.rds"))
+  #d = readRDS(paste0("output/AK/", species[spp],"_350_density_depth_varying.rds"))
   
   # below 2 lines necessary for models fit with older sdmTMB versions
   #d$tmb_data$weights_i = rep(1, length(d$tmb_data$y_i))
@@ -76,6 +85,7 @@ for(spp in 1:length(species)) {
   
   mycgi_ellipse_plots[[spp]] <- mycgifun(mycgi[[spp]]) %>% 
     ggplot(aes(xval,yval,fill=factor(year),color=factor(year))) +
+    annotation_map(shore, color = "black", fill = "white", size=0.1) +
     geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.1) +
     scale_y_continuous(expand = expand_scale(mult = .15)) +
     scale_x_continuous(expand = expand_scale(mult = .15)) +
@@ -84,6 +94,7 @@ for(spp in 1:length(species)) {
     ggtitle(species[spp])
   
   mycgi_cross_plots[[spp]] <- ggplot() + 
+    annotation_map(shore, color = "black", fill = "white", size=0.1) +
     geom_path(data=mycgi[[spp]],aes(xaxe1,yaxe1)) + 
     geom_path(data=mycgi[[spp]],aes(xaxe2,yaxe2)) +
     facet_wrap(~year,ncol=5) + 
@@ -208,17 +219,6 @@ spatiotemporal_plots[[spp]] = plot_map_raster(p, "epsilon_st") +
   facet_wrap(~year) +
   coord_fixed() +
   ggtitle(paste0(species[spp],"_ST"))
-
-# TO DO: make plot of average biomass, rather than spatial intercept as below
-#intercept_plots[[spp]] = plot_map_raster(dplyr::filter(p,year==min(Predict_data_years$year)), "omega_s") +
-#  theme(plot.title = element_blank(),
-#        axis.title.x = element_text(margin = margin(t = -20)),
-#        axis.title.y = element_blank(),
-#        axis.text = element_blank(),
-#        legend.key.width = unit(0.2,"cm"),
-#        legend.title = element_blank(),
-#        legend.position = c(0.1,0.8)) +
-#  labs(x = "intercept")
 
 }
 

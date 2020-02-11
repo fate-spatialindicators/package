@@ -8,6 +8,13 @@ library(sp)
 library(broom)
 library(ggforce) # for plotting ellipses
 
+# get coastlines and transform to projection and scale of data
+shore <- rnaturalearth::ne_countries(continent = "north america", scale = "medium", returnclass = "sp")
+shore <- sp::spTransform(shore, CRS = "+proj=utm +zone=10 ellps=WGS84")
+shore <- fortify(shore)
+shore$long <- shore$long/1000
+shore$lat <- shore$lat/1000
+
 # select years to predict and gather replicate prediction data for each of these years
 years = 2003:2018
 wc_grid = readRDS("data/WC/WC_BTS/wc_grid.rds")
@@ -41,12 +48,14 @@ gic_plots = list()
 # plotting functions
 plot_map_point <- function(dat, column = "omega_s") {
   ggplot(dat, aes_string("X", "Y", colour = column)) +
+    annotation_map(shore, color = "black", fill = "white", size=0.1) +
     geom_point(size=0.1) +
     xlab("Longitude") +
     ylab("Latitude")
 }
 plot_map_raster <- function(dat, column = "omega_s") {
   ggplot(dat, aes_string("X", "Y", fill = column)) +
+    annotation_map(shore, color = "black", fill = "white", size=0.1) +
     geom_raster() +
     scale_fill_viridis_c() +
     xlab("Longitude") +
@@ -85,6 +94,7 @@ for(spp in 1:length(species)) {
   
   mycgi_ellipse_plots[[spp]] <- mycgifun(mycgi[[spp]]) %>% 
     ggplot(aes(xval,yval,fill=factor(year),color=factor(year))) +
+    annotation_map(shore, color = "black", fill = "white", size=0.1) +
     geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.1) +
     scale_y_continuous(expand = expand_scale(mult = .15)) +
     scale_x_continuous(expand = expand_scale(mult = .15)) +
@@ -93,6 +103,7 @@ for(spp in 1:length(species)) {
     ggtitle(species[spp])
   
   mycgi_cross_plots[[spp]] <- ggplot() + 
+    annotation_map(shore, color = "black", fill = "white", size=0.1) +
     geom_path(data=mycgi[[spp]],aes(xaxe1,yaxe1)) + 
     geom_path(data=mycgi[[spp]],aes(xaxe2,yaxe2)) +
     facet_wrap(~year,ncol=4) + 
