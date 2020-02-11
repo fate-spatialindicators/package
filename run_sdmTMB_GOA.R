@@ -100,8 +100,8 @@ for(spp in 1:length(species)) {
                               #control = sdmTMBcontrol(step.min = 0.01, step.max = 1)
       )
       
-      saveRDS(density_model, file=paste0("output/AK/",species[spp],"_",performance$knots[k],"_density_depth_varying.rds"))
-      saveRDS(density_model2, file=paste0("output/AK/",species[spp],"_",performance$knots[k],"_density_no_covar.rds"))
+      saveRDS(density_model, file=paste0("output/AK/",species[spp],"_",n_knots,"_density_depth_varying.rds"))
+      saveRDS(density_model2, file=paste0("output/AK/",species[spp],"_",n_knots,"_density_no_covar.rds"))
 }
 
 ###########################################################################################################
