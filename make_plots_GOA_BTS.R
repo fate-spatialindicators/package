@@ -105,7 +105,7 @@ for(spp in 1:length(species)) {
     ggtitle(paste0(species[spp],"_COG_Inertia"))
   
   # global index of collocation, comparing all years to individual years
-  if(!(spp %in% c(5:10))){
+  if(!(spp %in% c(6:10))){
     gic_plots[[spp]] <- p %>% 
       group_by(year) %>% 
       summarise(gic=gic(x1=X,
@@ -118,8 +118,7 @@ for(spp in 1:length(species)) {
       geom_line() +
       theme(axis.title=element_blank(), axis.text.x = element_blank()) +
       ggtitle(species[spp])
-  }
-  else{
+  }else{
     gic_plots[[spp]] <- p %>% 
       group_by(year) %>% 
       summarise(gic=gic(x1=X,
@@ -139,7 +138,7 @@ for(spp in 1:length(species)) {
   p_All = predict(d, newdata=Predict_data_years, return_tmb_object = TRUE)  
   COG = get_cog(p_All)
   # add x axis labels and legend only to specific panels to be combined later
-  if(!(spp %in% c(5:10))){
+  if(!(spp %in% c(6:10))){
     COG_plots_N[[spp]] = ggplot(filter(COG, coord == "Y"), aes(year, est)) +
       geom_ribbon(aes(ymin = lwr, ymax = upr), fill = "grey70") +
       geom_line(color = "black") +
@@ -147,8 +146,7 @@ for(spp in 1:length(species)) {
       theme(axis.title = element_blank(), title = element_text(size = rel(0.9)),
             axis.text.x = element_blank(), plot.margin = unit(c(0,0,1,3), "pt"),
             legend.position = "none")
-  }
-  else{
+  }else{
     COG_plots_N[[spp]] = ggplot(filter(COG, coord == "Y"), aes(year, est)) +
       geom_ribbon(aes(ymin = lwr, ymax = upr), fill = "grey70") +
       geom_line(color = "black") +
@@ -159,7 +157,7 @@ for(spp in 1:length(species)) {
       scale_x_continuous(breaks=seq(1985, 2015, 10))
   }
   
-  if(!(spp %in% c(5:10))){
+  if(!(spp %in% c(6:10))){
     COG_plots_E[[spp]] = ggplot(filter(COG, coord == "X"), aes(year, est)) +
       geom_ribbon(aes(ymin = lwr, ymax = upr), fill = "grey70") +
       geom_line(color = "black") +
@@ -167,8 +165,7 @@ for(spp in 1:length(species)) {
       theme(axis.title = element_blank(), title = element_text(size = rel(0.9)),
             axis.text.x = element_blank(), plot.margin = unit(c(0,0,1,3), "pt"),
             legend.position = "none")
-  }
-  else{
+  }else{
     COG_plots_E[[spp]] = ggplot(filter(COG, coord == "X"), aes(year, est)) +
       geom_ribbon(aes(ymin = lwr, ymax = upr), fill = "grey70") +
       geom_line(color = "black") +
@@ -181,10 +178,10 @@ for(spp in 1:length(species)) {
   
 ## model checking
   # check anisotropy
-  anisotropy_plots[[spp]] = plot_anisotropy(d) +
-    ggtitle(paste0(species[spp],"_aniso"))
+  #anisotropy_plots[[spp]] = plot_anisotropy(d) +
+  #  ggtitle(paste0(species[spp],"_aniso"))
   ## residuals
-  data = select(d$data, X, Y, cpue_kg_km2, year)
+  data = select(d$data, X, Y, cpue, year)
   data$residuals = residuals(d)
   # qq plots
   qq_plots[[spp]] = qqnorm(data$residuals)
@@ -192,7 +189,7 @@ for(spp in 1:length(species)) {
   residuals_plots[[spp]] = plot_map_point(data, "residuals") + facet_wrap(~year) + geom_point(size=0.05, alpha=0.1) +
     coord_fixed() + scale_color_gradient2() + ggtitle(species[spp])
   # check convergence and parameter estimates
-  sink(file = "output/GOA/report.txt", append = TRUE)
+  sink(file = "output/AK/report.txt", append = TRUE)
   print(species[spp])
   print(d)
   print(d$sd_report)
@@ -266,9 +263,9 @@ ggsave(filename = "figures/AK/AK_BTS/st_maps.pdf",
 
 ## model checking plots
 # anisotropy plots for each species
-ggsave(filename = "figures/AK/AK_BTS/anisotropy.pdf",
-       plot = arrangeGrob(grobs = anisotropy_plots, ncol = 5),
-       width = 12, height = 8, units = c("in"))
+#ggsave(filename = "figures/AK/AK_BTS/anisotropy.pdf",
+#       plot = arrangeGrob(grobs = anisotropy_plots, ncol = 5),
+#       width = 12, height = 8, units = c("in"))
 # qq norm plots for each species
 pdf(file = "figures/AK/AK_BTS/qqnorm.pdf", width = 12, height = 12)
 par(mfrow=c(2,5))
