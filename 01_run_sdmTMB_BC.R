@@ -164,20 +164,20 @@ if (!file.exists(.f1) || !file.exists(.f2)) {
   cogs <- readRDS(.f2)
 }
 
-prediction_df <- purrr::map_df(seq_len(nrow(to_fit)), function(i) {
+prediction_df <- purrr::map_df(seq_along(sv), function(i) {
   .dat <- if (!is.na(predictions[[i]])[[1]]) predictions[[i]]$data else NA
   data.frame(
-    survey = to_fit$.survey[i], species = to_fit$.species[i], .dat,
+    survey = paste(sv[[i]], collapse = ", "), species = sp[[i]], .dat,
     stringsAsFactors = FALSE
   )
 }) %>%
-  select(-.dat, -zeta_s, -est_rf, -log_depth_scaled2, -log_depth_scaled, -density_kgpm2)
+  select(-density_kgpm2)
 saveRDS(prediction_df, file = "data/BC/generated/bc-survey-predictions2-df.rds")
 
-cogs_df <- purrr::map_df(seq_len(nrow(to_fit)), ~ data.frame(
-  survey = to_fit$.survey[.x],
-  species = to_fit$.species[.x],
-  cogs[[.x]], stringsAsFactors = FALSE
+cogs_df <- purrr::map_df(seq_along(sv), ~ data.frame(
+  survey = paste(sv[[.]], collapse = ", "),
+  species = sp[[.]],
+  cogs[[.]], stringsAsFactors = FALSE
 )) %>%
   as_tibble() %>%
   select(-`cogs...x..`)
