@@ -24,6 +24,7 @@ library(dplyr)
 library(sdmTMB)
 library(future)
 library(ggplot2)
+library(purrr)
 
 plan(multisession, workers = floor(availableCores() / 2))
 # plan(sequential)
@@ -58,9 +59,14 @@ if (!file.exists(.file)) {
   d <- readRDS(.file)
 }
 
-syn_grid <- gfplot::synoptic_grid %>% # utm 9
-  select(-cell_area, -survey_domain_year)
-saveRDS(syn_grid, file = "data/BC/bc-synoptic-grids.rds")
+.file <- "data/BC/bc-synoptic-grids.rds"
+if (!file.exists(.file)) {
+  syn_grid <- gfplot::synoptic_grid %>% # utm 9
+    select(-cell_area, -survey_domain_year)
+  saveRDS(syn_grid, file = .file)
+} else {
+  syn_grid <- readRDS(.file)
+}
 
 convert2utm <- function(x, utm_zone = 9) {
   x <- dplyr::rename(x, X = longitude, Y = latitude)
@@ -91,10 +97,10 @@ scale_dat <- function(grid, tow_dat) {
   list(grid = grid, tow_dat = tow_dat)
 }
 
-fit_bc_survey <- function(.survey, .species, knots = 250L, silent = TRUE) {
-  sp_dat <- filter(dat, species == .species, survey == .survey) %>%
+fit_bc_survey <- function(.survey, .species, knots = 200L, silent = TRUE, ...) {
+  sp_dat <- filter(dat, species == .species, survey %in% .survey) %>%
     mutate(density_kgp100m2 = density_kgpm2 * 100 * 100) # computational stability?
-  survey_grid <- filter(syn_grid, survey == .survey) %>%
+  survey_grid <- filter(syn_grid, survey %in% .survey) %>%
     expand_years(sp_dat) %>%
     select(year, X, Y, depth)
   if (nrow(sp_dat) > 1L) {
@@ -123,10 +129,18 @@ to_fit <- tidyr::expand_grid(
   .survey = unique(syn_grid$survey),
   .species = unique(dat$species)
 )
+to_fit <- filter(to_fit, !.survey %in% "SYN WCHG")
+to_fit$.group <- to_fit$.survey
+to_fit <- mutate(to_fit, .group =
+    ifelse(.survey %in% c("SYN QCS", "SYN HS"), "SYN QCS SYN HS", .group))
+sp <- split(to_fit$.species, paste(to_fit$.group, to_fit$.species)) %>% map(1)
+sv <- split(to_fit$.survey, paste(to_fit$.group, to_fit$.species))
+kn <- map(sv, ~ ifelse(.x == c("SYN QCS", "SYN HS"), 200, 125)[1])
 
 .f <- "data/BC/generated/bc-survey-fits2.rds"
 if (!file.exists(.f)) {
-  bc_fits <- furrr::future_pmap(to_fit, fit_bc_survey)
+  # bc_fits <- pmap(list(sv, sp, kn), fit_bc_survey)
+  bc_fits <- furrr::future_pmap(list(sv, sp, kn), fit_bc_survey)
   saveRDS(bc_fits, file = .f)
 } else {
   bc_fits <- readRDS(.f)
@@ -150,23 +164,22 @@ if (!file.exists(.f1) || !file.exists(.f2)) {
   cogs <- readRDS(.f2)
 }
 
-prediction_df <- purrr::map_df(seq_len(nrow(to_fit)), function(i) {
+prediction_df <- purrr::map_df(seq_along(sv), function(i) {
   .dat <- if (!is.na(predictions[[i]])[[1]]) predictions[[i]]$data else NA
   data.frame(
-    survey = to_fit$.survey[i], species = to_fit$.species[i], .dat,
+    survey = paste(sv[[i]], collapse = ", "), species = sp[[i]], .dat,
     stringsAsFactors = FALSE
   )
 }) %>%
-  select(-.dat, -zeta_s, -est_rf, -log_depth_scaled2, -log_depth_scaled, -density_kgpm2)
+  select(-density_kgpm2)
 saveRDS(prediction_df, file = "data/BC/generated/bc-survey-predictions2-df.rds")
 
-cogs_df <- purrr::map_df(seq_len(nrow(to_fit)), ~ data.frame(
-  survey = to_fit$.survey[.x],
-  species = to_fit$.species[.x],
-  cogs[[.x]], stringsAsFactors = FALSE
+cogs_df <- purrr::map_df(seq_along(sv), ~ data.frame(
+  survey = paste(sv[[.]], collapse = ", "),
+  species = sp[[.]],
+  cogs[[.]], stringsAsFactors = FALSE
 )) %>%
-  as_tibble() %>%
-  select(-`cogs...x..`)
+  as_tibble()
 
 stopifnot(nrow(filter(cogs_df, is.na(est))) == 0)
 
@@ -212,3 +225,9 @@ g <- ggplot(cogs_wide, aes(X, Y, color = year, fill = year)) +
   scale_fill_viridis_c(option = "C") +
   ggsidekick::theme_sleek()
 ggsave("figures/BC/cog-surveys-XY-ellipse.pdf", width = 19, height = 8)
+
+# columns produced by applying cgi(): year      xcg      ycg         I      Imax     Imin       Iso    xaxe1    yaxe1    xaxe2    yaxe2
+#
+# additional columns: type ("survey", "commercial"), response ("density", "cpue", "catch"), gear ("bottom_trawl", "longline"…), species (species common name, or the species group targeted by a commercial fishery sector, or simply "groundfish" if general), region ("BC,"WC","AK","NE"), subregion ("GOA"….), gic, xcg_model, ycg_model (COG estimates from sdmTMB),  xcg_model_lwr (lower bound of 95% CI for COG), ycg_model_upr, xcg_model_se, ycg_model_se
+#
+# One other note on standardization:  Let's try to be consistent with units, where catch will be in kg, density and cpue as kg/square km, and coordinates/distances in units of km (note that when you project geographic coordinates to utm, they will be in meters).
