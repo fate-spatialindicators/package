@@ -101,7 +101,7 @@ for(spp in 1:length(species)) {
     geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.2, size=0.1) +
     scale_y_continuous(expand = expand_scale(mult = .15)) +
     scale_x_continuous(expand = expand_scale(mult = .15)) +
-    theme_bw() + 
+    ggsidekick::theme_sleek() + 
     theme(legend.position = "none", axis.title=element_blank()) +
     ggtitle(species[spp])
   
@@ -112,7 +112,7 @@ for(spp in 1:length(species)) {
       geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.2, size=0.1) +
       scale_y_continuous(limits = c(3500, 5550)) +
       scale_x_continuous(limits = c(250, 675)) +
-      theme_bw() + 
+      ggsidekick::theme_sleek() + 
       theme(legend.position = "none", axis.title=element_blank()) +
       ggtitle(species[spp]) +
       theme(axis.text.y = element_blank()) 
@@ -121,9 +121,9 @@ for(spp in 1:length(species)) {
     ggplot(aes(xval,yval,fill=factor(year),color=factor(year))) +
     annotation_map(shore, color = "black", fill = "white", size=0.1) +
     geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.2, size=0.1) +
-    scale_y_continuous(limits = c(3500, 5550)) +
+    scale_y_continuous(limits = c(3850, 5550)) +
     scale_x_continuous(limits = c(250, 675)) +
-    theme_bw() + 
+    ggsidekick::theme_sleek() + 
     theme(legend.position = "none", axis.title=element_blank()) +
     ggtitle(species[spp])
   }
@@ -337,8 +337,8 @@ ggsave(filename = "figures/WC/WC_BTS/COG_model_est_E.pdf",
                           left = grid::textGrob("COG Eastings (km)", rot = 90, vjust = 0.2)),
        width = 12, height = 8, units = c("in"))
 ggsave("figures/WC/WC_BTS/COG_model_ellipses.pdf",
-       plot = arrangeGrob(grobs = COG_plots_N_E, ncol = 5, bottom = "COG Northings (km)",
-                          left = grid::textGrob("COG Eastings (km)", rot = 90, vjust = 0.2)), 
+       plot = arrangeGrob(grobs = COG_plots_N_E, ncol = 5, bottom = "COG Eastings (km)",
+                          left = grid::textGrob("COG Northings (km)", rot = 90, vjust = 0.2)), 
        width = 19, height = 8)
 
 # plot of predictions from full model (all fixed + random effects)
