@@ -143,3 +143,8 @@ saveRDS(Predict_data_years, file=paste0("data/AK/AK_BTS/GOA_predict_data.rds")) 
 #plot_map_raster(p, "est") +
 #  facet_wrap(~year) +
 #  coord_fixed()
+
+# data for ERic
+#data_sub = data %>% dplyr::filter(common_name %in% c(species, "flathead sole", "walleye pollock", "Pacific halibut", "dusky rockfish"))
+#saveRDS(data_sub, file=paste0("data/AK/AK_BTS/GOA_data_consonants.rds"))                                    
+            
