@@ -179,8 +179,7 @@ cogs_df <- purrr::map_df(seq_along(sv), ~ data.frame(
   species = sp[[.]],
   cogs[[.]], stringsAsFactors = FALSE
 )) %>%
-  as_tibble() %>%
-  select(-`cogs...x..`)
+  as_tibble()
 
 stopifnot(nrow(filter(cogs_df, is.na(est))) == 0)
 
