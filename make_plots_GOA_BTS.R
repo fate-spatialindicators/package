@@ -115,7 +115,7 @@ for(spp in 1:length(species)) {
       scale_y_continuous(limits = c(480, 1210)) +
       scale_x_continuous(limits = c(-750, 1100)) +
       theme_bw() + 
-      theme(legend.position = "none", axis.title=element_blank(), legend.position = c(0.9,0.1)) +
+      theme(legend.position = "none", axis.title=element_blank()) +
       ggtitle(species[spp])
   }
   
