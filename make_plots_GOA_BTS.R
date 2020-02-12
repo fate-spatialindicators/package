@@ -31,10 +31,13 @@ intercept_plots = list()
 intercept_cluster_plots = list()
 COG_plots_N = list()
 COG_plots_E = list()
+COG_plots_N_E = list()
 mycgi = list()
 mycgi_cross_plots = list()
 mycgi_ellipse_plots = list()
+mycgi_ellipse_plots_fixed = list()
 gic_plots = list()
+gic_plots_fixed = list()
 
 # plotting functions
 plot_map_point <- function(dat, column = "omega_s") {
@@ -86,12 +89,35 @@ for(spp in 1:length(species)) {
   mycgi_ellipse_plots[[spp]] <- mycgifun(mycgi[[spp]]) %>% 
     ggplot(aes(xval,yval,fill=factor(year),color=factor(year))) +
     annotation_map(shore, color = "black", fill = "white", size=0.1) +
-    geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.1) +
+    geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.2, size=0.1) +
     scale_y_continuous(expand = expand_scale(mult = .15)) +
     scale_x_continuous(expand = expand_scale(mult = .15)) +
     theme_bw() + 
     theme(legend.position = "none", axis.title=element_blank()) +
     ggtitle(species[spp])
+  
+  if(!(spp %in% c(1,6))){
+  mycgi_ellipse_plots_fixed[[spp]] <- mycgifun(mycgi[[spp]]) %>% 
+    ggplot(aes(xval,yval,fill=factor(year),color=factor(year))) +
+    annotation_map(shore, color = "black", fill = "white", size=0.1) +
+    geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.2, size=0.2) +
+    scale_y_continuous(limits = c(480, 1210)) +
+    scale_x_continuous(limits = c(-750, 1100)) +
+    theme_bw() + 
+    theme(legend.position = "none", axis.title=element_blank()) +
+    ggtitle(species[spp])+
+    theme(axis.text.y = element_blank()) 
+  }else{
+    mycgi_ellipse_plots_fixed[[spp]] <- mycgifun(mycgi[[spp]]) %>% 
+      ggplot(aes(xval,yval,fill=factor(year),color=factor(year))) +
+      annotation_map(shore, color = "black", fill = "white", size=0.1) +
+      geom_mark_ellipse(expand = unit(0, "mm"),alpha=0.2, size=0.2) +
+      scale_y_continuous(limits = c(480, 1210)) +
+      scale_x_continuous(limits = c(-750, 1100)) +
+      theme_bw() + 
+      theme(legend.position = "none", axis.title=element_blank(), legend.position = c(0.9,0.1)) +
+      ggtitle(species[spp])
+  }
   
   mycgi_cross_plots[[spp]] <- ggplot() + 
     annotation_map(shore, color = "black", fill = "white", size=0.1) +
@@ -105,32 +131,40 @@ for(spp in 1:length(species)) {
     ggtitle(paste0(species[spp],"_COG_Inertia"))
   
   # global index of collocation, comparing all years to individual years
+  gic_dat <- p %>% 
+    group_by(year) %>% 
+    summarise(gic=gic(x1=X,
+                      y1=Y,
+                      z1=exp(est),
+                      x2=p$X, # These funky lines allow us to refer to all years of the data and not just the current group_by year
+                      y2=p$Y,
+                      z2=exp(p$est)))
+  
   if(!(spp %in% c(6:10))){
-    gic_plots[[spp]] <- p %>% 
-      group_by(year) %>% 
-      summarise(gic=gic(x1=X,
-                        y1=Y,
-                        z1=exp(est),
-                        x2=p$X, 
-                        y2=p$Y,
-                        z2=exp(p$est))) %>%
-      ggplot(aes(year,gic)) + 
+    gic_plots[[spp]] <- ggplot(gic_dat, aes(year,gic)) + 
       geom_line() +
       theme(axis.title=element_blank(), axis.text.x = element_blank()) +
       ggtitle(species[spp])
   }else{
-    gic_plots[[spp]] <- p %>% 
-      group_by(year) %>% 
-      summarise(gic=gic(x1=X,
-                        y1=Y,
-                        z1=exp(est),
-                        x2=p$X, # These funky lines allow us to refer to all years of the data and not just the current group_by year
-                        y2=p$Y,
-                        z2=exp(p$est))) %>%
-      ggplot(aes(year,gic)) + 
+    gic_plots[[spp]] <- ggplot(gic_dat, aes(year,gic)) + 
       geom_line() +
       theme(axis.title=element_blank()) +
-      scale_x_continuous(breaks=seq(1985, 2015, 10)) + 
+      scale_x_continuous(breaks=seq(1990, 2015, 5)) +
+      ggtitle(species[spp])
+  }
+  
+  if(!(spp %in% c(6:10))){
+    gic_plots_fixed[[spp]] <- ggplot(gic_dat, aes(year,gic)) + 
+      geom_line() +
+      theme(axis.title=element_blank(), axis.text.x = element_blank()) +
+      scale_y_continuous(limits=c(0.6, 1)) +
+      ggtitle(species[spp])
+  }else{
+    gic_plots_fixed[[spp]] <- ggplot(gic_dat, aes(year,gic)) + 
+      geom_line() +
+      theme(axis.title=element_blank()) +
+      scale_x_continuous(breaks=seq(1990, 2015, 5)) +
+      scale_y_continuous(limits=c(0.89, 1)) +
       ggtitle(species[spp])
   }
   
@@ -154,7 +188,7 @@ for(spp in 1:length(species)) {
       theme(axis.title = element_blank(), title = element_text(size = rel(0.9)),
             plot.margin = unit(c(0,0,0,3), "pt"),
             legend.position = "none") +
-      scale_x_continuous(breaks=seq(1985, 2015, 10))
+      scale_x_continuous(breaks=seq(1990, 2015, 10))
   }
   
   if(!(spp %in% c(6:10))){
@@ -173,7 +207,40 @@ for(spp in 1:length(species)) {
       theme(axis.title = element_blank(), title = element_text(size = rel(0.9)),
             plot.margin = unit(c(0,0,0,3), "pt"),
             legend.position = "none") +
-      scale_x_continuous(breaks=seq(1985, 2015, 10))
+      scale_x_continuous(breaks=seq(1990, 2015, 10))
+  }
+  # COGs in 2 dimensions as ellipses
+  cogs_wide_est <- reshape2::dcast(COG, year ~ coord, value.var = "est")
+  cogs_wide_lwr <- reshape2::dcast(COG, year ~ coord, value.var = "lwr") %>%
+    mutate(X_lwr = X, Y_lwr = Y)
+  cogs_wide_upr <- reshape2::dcast(COG, year ~ coord, value.var = "upr") %>%
+    mutate(X_upr = X, Y_upr = Y)
+  cogs_wide <- cogs_wide_est %>% 
+    left_join(select(cogs_wide_lwr, year, X_lwr, Y_lwr)) %>%
+    left_join(select(cogs_wide_upr, year, X_upr, Y_upr))
+  
+  cogs_wide <- mutate(cogs_wide, diameter_x = X_upr - X_lwr, diameter_y = Y_upr - Y_lwr)
+  
+  if(!(spp %in% c(6:10))){
+    COG_plots_N_E[[spp]] <- ggplot(cogs_wide, aes(X, Y, color = year, fill = year)) + 
+      labs(title = species[spp], tag = LETTERS[spp]) +
+      geom_path() +
+      ggforce::geom_ellipse(aes(x0 = X, y0 = Y, a = diameter_x/2, b = diameter_y/2, angle = 0), alpha = 0.1) +
+      geom_point() +
+      scale_color_viridis_c(option = "C") +
+      scale_fill_viridis_c(option = "C") +
+      ggsidekick::theme_sleek() +
+      theme(axis.title = element_blank(), axis.text.x = element_blank(), legend.position = c(0.9,0.85))
+  }else{
+    COG_plots_N_E[[spp]] <- ggplot(cogs_wide, aes(X, Y, color = year, fill = year)) + 
+      labs(title = species[spp], tag = LETTERS[spp]) +
+      geom_path() +
+      ggforce::geom_ellipse(aes(x0 = X, y0 = Y, a = diameter_x/2, b = diameter_y/2, angle = 0), alpha = 0.1) +
+      geom_point() +
+      scale_color_viridis_c(option = "C") +
+      scale_fill_viridis_c(option = "C") +
+      ggsidekick::theme_sleek() +
+      theme(axis.title = element_blank(), legend.position = "none")
   }
   
 ## model checking
@@ -193,6 +260,7 @@ for(spp in 1:length(species)) {
   print(species[spp])
   print(d)
   print(d$sd_report)
+  print(d$sd_report$pdHess)
   sink()
 # check whether AR1 assumption is supported in models where fields are not IID, printing estimate and 95%CI for AR1 param
 #print("AR1 estimate")
@@ -223,7 +291,11 @@ ggsave(filename = "figures/AK/AK_BTS/crosses.pdf",
        plot = marrangeGrob(grobs = mycgi_cross_plots, nrow = 1, ncol = 1),
        width = 7, height = 7, units = c("in"))
 ggsave(filename = "figures/AK/AK_BTS/ellipses.pdf",
-       plot = arrangeGrob(grobs = mycgi_ellipse_plots, ncol = 5, bottom = "Eastings (km)",
+       plot = arrangeGrob(grobs = mycgi_ellipse_plots, ncol = 2, bottom = "Eastings (km)",
+                          left = grid::textGrob("Northings (km)", rot = 90, vjust = 0.2)),
+       width = 7, height = 9, units = c("in"))
+ggsave(filename = "figures/AK/AK_BTS/ellipses_fixed.pdf",
+       plot = arrangeGrob(grobs = mycgi_ellipse_plots_fixed, ncol = 2, bottom = "Eastings (km)",
                           left = grid::textGrob("Northings (km)", rot = 90, vjust = 0.2)),
        width = 7, height = 9, units = c("in"))
 # plot legend separately for now
@@ -240,6 +312,10 @@ ggsave(filename = "figures/AK/AK_BTS/GIC.pdf",
        plot = arrangeGrob(grobs = gic_plots, ncol = 5, bottom = "Year",
                           left = grid::textGrob("Global index of collocation", rot = 90, vjust = 0.2)),
        width = 9, height = 7, units = c("in"))
+ggsave(filename = "figures/AK/AK_BTS/GIC_fixed.pdf",
+       plot = arrangeGrob(grobs = gic_plots_fixed, ncol = 5, bottom = "Year",
+                          left = grid::textGrob("Global index of collocation", rot = 90, vjust = 0.2)),
+       width = 9, height = 7, units = c("in"))
 
 # COG timeseries plots from model output
 ggsave(filename = "figures/AK/AK_BTS/COG_model_est_N.pdf",
@@ -250,6 +326,10 @@ ggsave(filename = "figures/AK/AK_BTS/COG_model_est_E.pdf",
        plot = arrangeGrob(grobs = COG_plots_E, ncol = 5, bottom = "Year",
                           left = grid::textGrob("COG Eastings (km)", rot = 90, vjust = 0.2)),
        width = 12, height = 8, units = c("in"))
+ggsave("figures/AK/AK_BTS/COG_model_ellipses.pdf",
+       plot = arrangeGrob(grobs = COG_plots_N_E, ncol = 5, bottom = "COG Northings (km)",
+                          left = grid::textGrob("COG Eastings (km)", rot = 90, vjust = 0.2)), 
+       width = 19, height = 8)
 
 # plot of predictions from full model (all fixed + random effects)
 ggsave(filename = "figures/AK/AK_BTS/predicted_density_maps.pdf",
