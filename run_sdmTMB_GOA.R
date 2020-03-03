@@ -17,8 +17,8 @@ n_knots = 750
 species = c("Dover sole","arrowtooth flounder", "Pacific halibut",
             "walleye pollock", "rex sole", "English sole","sablefish","Pacific cod",
             "spiny dogfish","longnose skate","big skate", "Pacific ocean perch", 
-            "northern rockfish", "butter sole", "flathead sole", "dusky rockfish", "rock soles")
-#To follow up: Few dusky rockfish in 1990, were they identified as something else?  Add lingcod to cpue data?
+            "northern rockfish", "butter sole", "flathead sole", "lingcod",
+            "dusky rockfish*", "rock soles")
 
 ###########################################################################################################
 # Prepare data and fit models
@@ -29,14 +29,21 @@ data <- readRDS("data/AK/AK_BTS/AK_BTS.rds")
 # filter to GOA survey, remove tows with 0 bottom depth, and drop 2001 year when survey was incomplete, 
 # years before 1990 when a different net was used
 data <- data %>% filter(SURVEY == "GOA", BOTTOM_DEPTH > 0, YEAR != 2001 & YEAR > 1989) 
-  
-#sum catches of northern and southern rock sole with rock sole unid. (not distinguished until 1996)
-rock_soles <- data %>% dplyr::filter(COMMON_NAME %in% c("rock sole unid.", "southern rock sole", "northern rock sole")) %>%
+
+# lump biomass for species with identification issues
+rock_soles <- data %>% 
+  dplyr::filter(COMMON_NAME %in% c("rock sole unid.", "southern rock sole", "northern rock sole")) %>%
   group_by_at(vars(-CPUE, -COMMON_NAME, -SPECIES_NAME)) %>% 
   summarise(CPUE = sum(CPUE)) %>% 
   ungroup() %>% 
   mutate(SPECIES_NAME = "Lepidopsetta spp.", COMMON_NAME = "rock soles")
-data <- as.data.frame(rbind(data, rock_soles))
+dusky <- data %>% 
+  dplyr::filter(COMMON_NAME %in% c("dusky and dark rockfishes unid.", "dusky rockfish")) %>%
+  group_by_at(vars(-CPUE, -COMMON_NAME, -SPECIES_NAME)) %>% 
+  summarise(CPUE = sum(CPUE)) %>% 
+  ungroup() %>% 
+  mutate(SPECIES_NAME = "Sebastes variabilis cf.", COMMON_NAME = "dusky rockfish*")
+data <- as.data.frame(rbind(data, rock_soles, dusky))
 
 # read in the grid cell data from the survey design 
 # (one may choose to pre-specify which hauls are in which cells, or use this to guide resolution of prediction grid)
